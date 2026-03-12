@@ -1,7 +1,21 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { Link2, CalendarDays, Clock, Users, Workflow, LayoutGrid, Route, CircleDollarSign, BarChart2, Shield, HelpCircle, ChevronLeft, Plus } from 'lucide-react';
-import Button from '../ui/Button';
+
+const mainNavItems = [
+  { to: '/dashboard', label: 'Scheduling', icon: Link2, iconClass: 'rotate-45' },
+  { to: '/meetings', label: 'Meetings', icon: CalendarDays },
+  { to: '/availability', label: 'Availability', icon: Clock },
+  { to: '/contacts', label: 'Contacts', icon: Users },
+  { to: '/workflows', label: 'Workflows', icon: Workflow },
+  { to: '/integrations', label: 'Integrations & apps', icon: LayoutGrid },
+  { to: '/routing', label: 'Routing', icon: Route },
+];
+
+const bottomNavItems = [
+  { to: '/analytics', label: 'Analytics', icon: BarChart2 },
+  { to: '/admin', label: 'Admin center', icon: Shield },
+];
 
 function Sidebar() {
   return (
@@ -31,41 +45,62 @@ function Sidebar() {
 
       {/* Main Nav */}
       <nav className="flex-1 px-3 space-y-0.5 overflow-y-auto custom-scrollbar">
-        <NavLink to="/dashboard" className="flex items-center gap-3 px-4 py-3 rounded-lg bg-blue-50 text-[#006BFF] font-bold text-[14px]">
-          <Link2 className="w-[18px] h-[18px] rotate-45 stroke-[2]" /> Scheduling
-        </NavLink>
-        <NavLink to="/meetings" className="flex items-center gap-3 px-4 py-3 rounded-lg text-text-secondary hover:bg-gray-50 hover:text-text-primary text-[14px] font-medium transition-colors">
-          <CalendarDays className="w-[18px] h-[18px] stroke-[1.5]" /> Meetings
-        </NavLink>
-        <NavLink to="/availability" className="flex items-center gap-3 px-4 py-3 rounded-lg text-text-secondary hover:bg-gray-50 hover:text-text-primary text-[14px] font-medium transition-colors">
-          <Clock className="w-[18px] h-[18px] stroke-[1.5]" /> Availability
-        </NavLink>
-        <NavLink to="/contacts" className="flex items-center gap-3 px-4 py-3 rounded-lg text-text-secondary hover:bg-gray-50 hover:text-text-primary text-[14px] font-medium transition-colors">
-          <Users className="w-[18px] h-[18px] stroke-[1.5]" /> Contacts
-        </NavLink>
-        <NavLink to="/workflows" className="flex items-center gap-3 px-4 py-3 rounded-lg text-text-secondary hover:bg-gray-50 hover:text-text-primary text-[14px] font-medium transition-colors">
-          <Workflow className="w-[18px] h-[18px] stroke-[1.5]" /> Workflows
-        </NavLink>
-        <NavLink to="/integrations" className="flex items-center gap-3 px-4 py-3 rounded-lg text-text-secondary hover:bg-gray-50 hover:text-text-primary text-[14px] font-medium transition-colors">
-          <LayoutGrid className="w-[18px] h-[18px] stroke-[1.5]" /> Integrations & apps
-        </NavLink>
-        <NavLink to="/routing" className="flex items-center gap-3 px-4 py-3 rounded-lg text-text-secondary hover:bg-gray-50 hover:text-text-primary text-[14px] font-medium transition-colors">
-          <Route className="w-[18px] h-[18px] stroke-[1.5]" /> Routing
-        </NavLink>
+        {mainNavItems.map((item) => {
+          const Icon = item.icon;
+          return (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              className={({ isActive }) =>
+                `flex items-center gap-3 px-4 py-3 rounded-lg text-[14px] transition-colors ${
+                  isActive
+                    ? 'bg-blue-50 text-[#006BFF] font-bold'
+                    : 'text-text-secondary hover:bg-gray-50 hover:text-text-primary font-medium'
+                }`
+              }
+            >
+              {({ isActive }) => (
+                <>
+                  <Icon className={`w-[18px] h-[18px] ${item.iconClass || ''} ${isActive ? 'stroke-[2]' : 'stroke-[1.5]'}`} />
+                  {item.label}
+                </>
+              )}
+            </NavLink>
+          );
+        })}
         
         {/* Upgrade Plan Banner Link */}
         <div className="mt-4 px-2">
-           <NavLink to="/upgrade" className="flex items-center gap-3 px-4 py-3 rounded-xl border border-blue-200 bg-[#F0F5FF]/50 text-[#006BFF] font-semibold text-[14px] hover:bg-[#F0F5FF] transition-colors">
+           <NavLink to="/upgrade" className={({ isActive }) => `flex items-center gap-3 px-4 py-3 rounded-xl border border-blue-200 bg-[#F0F5FF]/50 text-[#006BFF] font-semibold text-[14px] hover:bg-[#F0F5FF] transition-colors ${isActive ? 'bg-[#F0F5FF]' : ''}`}>
              <CircleDollarSign className="w-[18px] h-[18px] stroke-[1.5]" /> Upgrade plan
            </NavLink>
         </div>
         
-        <NavLink to="/analytics" className="mt-3 flex items-center gap-3 px-4 py-3 rounded-lg text-text-secondary hover:bg-gray-50 hover:text-text-primary text-[14px] font-medium transition-colors">
-          <BarChart2 className="w-[18px] h-[18px] stroke-[1.5]" /> Analytics
-        </NavLink>
-        <NavLink to="/admin" className="flex items-center gap-3 px-4 py-3 rounded-lg text-text-secondary hover:bg-gray-50 hover:text-text-primary text-[14px] font-medium transition-colors">
-          <Shield className="w-[18px] h-[18px] stroke-[1.5]" /> Admin center
-        </NavLink>
+        <div className="mt-3 space-y-0.5">
+          {bottomNavItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                className={({ isActive }) =>
+                  `flex items-center gap-3 px-4 py-3 rounded-lg text-[14px] transition-colors ${
+                    isActive
+                      ? 'bg-blue-50 text-[#006BFF] font-bold'
+                      : 'text-text-secondary hover:bg-gray-50 hover:text-text-primary font-medium'
+                  }`
+                }
+              >
+                {({ isActive }) => (
+                  <>
+                    <Icon className={`w-[18px] h-[18px] ${item.iconClass || ''} ${isActive ? 'stroke-[2]' : 'stroke-[1.5]'}`} />
+                    {item.label}
+                  </>
+                )}
+              </NavLink>
+            );
+          })}
+        </div>
       </nav>
 
       {/* Footer Nav */}
@@ -79,4 +114,3 @@ function Sidebar() {
 }
 
 export default Sidebar;
-

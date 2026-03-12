@@ -32,11 +32,11 @@ function EventTypeCard({ event, onCopyLink, onEdit, onDelete, onBookLink, onOffe
       </div>
       
       {/* Actions */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
          <button 
            type="button"
            onClick={() => onBookLink && onBookLink()}
-           className="text-text-muted hover:text-text-primary p-2 transition-colors relative"
+           className="text-text-muted hover:text-[#006BFF] hover:bg-blue-50/80 p-2 rounded-lg transition-colors relative"
            title="Book a meeting"
          >
             <CalendarDays className="w-5 h-5 stroke-[1.5]" />
@@ -44,7 +44,7 @@ function EventTypeCard({ event, onCopyLink, onEdit, onDelete, onBookLink, onOffe
          <button 
            type="button"
            onClick={() => onOfferTimes && onOfferTimes()}
-           className="text-text-muted hover:text-text-primary p-2 transition-colors relative"
+           className="text-text-muted hover:text-[#006BFF] hover:bg-blue-50/80 p-2 rounded-lg transition-colors relative"
            title="Offer time slots"
          >
             <Clock className="w-5 h-5 stroke-[1.5]" />
@@ -52,18 +52,18 @@ function EventTypeCard({ event, onCopyLink, onEdit, onDelete, onBookLink, onOffe
          <button 
            type="button"
            onClick={() => onShare && onShare()}
-           className="text-text-muted hover:text-text-primary p-2 transition-colors relative"
+           className="text-text-muted hover:text-[#006BFF] hover:bg-blue-50/80 p-2 rounded-lg transition-colors relative"
            title="Share availability"
          >
             <Share className="w-5 h-5 stroke-[1.5]" />
          </button>
          
-         <div className="w-px h-6 bg-border mx-1" />
+         <div className="w-px h-6 bg-border mx-2" />
          
          <button
             type="button"
             onClick={onCopyLink}
-            className="text-[13px] font-bold text-text-primary hover:text-blue-800 flex items-center gap-2 transition-colors border border-gray-300 hover:border-gray-400 bg-white hover:bg-gray-50 px-3.5 py-1.5 rounded-full shadow-sm"
+            className="text-[13px] font-bold text-text-primary hover:text-[#006BFF] flex items-center gap-2 transition-colors border border-gray-300 hover:border-blue-200 bg-white hover:bg-blue-50/80 px-3.5 py-1.5 rounded-full shadow-sm"
          >
             <Copy className="w-4 h-4 stroke-[2]" />
             Copy link
@@ -74,7 +74,7 @@ function EventTypeCard({ event, onCopyLink, onEdit, onDelete, onBookLink, onOffe
            <button
               type="button"
               onClick={() => setMenuOpen(!menuOpen)}
-              className="text-text-muted hover:text-text-primary p-1.5 hover:bg-gray-100 rounded-md transition-colors"
+              className="text-text-muted hover:text-[#006BFF] hover:bg-blue-50/80 p-2 rounded-lg transition-colors ml-1"
            >
               <MoreVertical className="w-5 h-5 stroke-[1.5]" />
            </button>
