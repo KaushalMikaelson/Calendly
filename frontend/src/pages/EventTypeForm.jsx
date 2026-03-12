@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { X, Clock, MapPin, CalendarDays, User, ChevronDown, AlertCircle, Video, Phone, Users, ChevronDownCircle } from 'lucide-react';
-import { eventTypesApi } from '../api';
+import { eventTypesApi, availabilityApi } from '../api';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import { useToast } from '../components/ui/Toast';
+import { useAvailability } from '../hooks/useAvailability';
 
 const COLORS = ['#0069FF', '#059669', '#7C3AED', '#DB2777', '#D97706', '#DC2626', '#0891B2'];
 const DURATIONS = [15, 20, 30, 45, 60, 90, 120];
@@ -27,6 +28,7 @@ function EventTypeForm() {
   const isEdit = Boolean(id);
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const { data: availabilityData } = useAvailability();
 
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(isEdit);
@@ -72,27 +74,44 @@ function EventTypeForm() {
     [previewMonth]
   );
 
-  // Generate time slots 9am–5pm based on duration
+  // Generate time slots based on availability rules and duration
   const timeSlots = useMemo(() => {
     const slots = [];
     const dur = Number(form.duration) || 30;
-    let start = 9 * 60;
-    const end = 17 * 60;
-    while (start + dur <= end) {
-      const h = Math.floor(start / 60);
-      const m = start % 60;
+    let startMinutes = 9 * 60;
+    let endMinutes = 17 * 60;
+
+    if (selectedDate && availabilityData?.rules) {
+      const day = selectedDate.getDay();
+      const rule = availabilityData.rules.find(r => r.day_of_week === day);
+      if (rule && rule.is_available) {
+        const [sh, sm] = rule.start_time.split(':').map(Number);
+        const [eh, em] = rule.end_time.split(':').map(Number);
+        startMinutes = sh * 60 + sm;
+        endMinutes = eh * 60 + em;
+      }
+    }
+
+    let current = startMinutes;
+    while (current + dur <= endMinutes) {
+      const h = Math.floor(current / 60);
+      const m = current % 60;
       const period = h < 12 ? 'AM' : 'PM';
       const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
       slots.push(`${h12}:${m.toString().padStart(2, '0')} ${period}`);
-      start += dur;
+      current += dur;
     }
     return slots;
-  }, [form.duration]);
+  }, [form.duration, selectedDate, availabilityData]);
 
   const isDateSelectable = (date) => {
     if (!date) return false;
     if (date < today) return false;
     const day = date.getDay();
+    if (availabilityData?.rules) {
+      const rule = availabilityData.rules.find((r) => r.day_of_week === day);
+      return rule ? rule.is_available : false;
+    }
     return day !== 0 && day !== 6;
   };
 
@@ -586,7 +605,7 @@ function EventTypeForm() {
                 <div className="font-bold text-[15px] text-text-primary mb-1">Availability</div>
                 <div className="flex items-center text-[13px] text-text-secondary font-medium gap-2">
                   <CalendarDays className="w-4 h-4 text-text-muted" />
-                  Weekdays, 9 am - 5 pm
+                  Default Weekly Hours
                 </div>
               </div>
               <ChevronDown className={`w-5 h-5 text-gray-500 transition-transform ${activeSection === 'availability' ? 'rotate-180' : ''}`} />
@@ -597,14 +616,30 @@ function EventTypeForm() {
                    <div className="flex justify-between items-center text-sm font-semibold text-text-primary border-b border-border pb-2 mb-2">
                       <div className="flex items-center gap-2"><CalendarDays className="w-4 h-4" /> Weekly hours</div>
                    </div>
-                   {['M', 'T', 'W', 'T', 'F'].map(day => (
-                      <div key={day} className="flex items-center gap-4 text-text-secondary font-medium">
-                         <div className="w-6 h-6 rounded-full bg-blue-primary text-white text-[10px] flex items-center justify-center font-bold">
-                           {day}
-                         </div>
-                         <span>9:00am - 5:00pm</span>
-                      </div>
-                   ))}
+                   {availabilityData?.rules?.filter(r => r.is_available).sort((a,b) => a.day_of_week === 0 ? 1 : b.day_of_week === 0 ? -1 : a.day_of_week - b.day_of_week).map(rule => {
+                      const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                      const dayName = days[rule.day_of_week];
+                      const formatTime = (timeStr) => {
+                         if (!timeStr) return '';
+                         const [h, m] = timeStr.split(':');
+                         const date = new Date(2000, 0, 1, parseInt(h, 10), parseInt(m, 10));
+                         return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }).toLowerCase();
+                      };
+                      return (
+                        <div key={rule.day_of_week} className="flex items-center gap-4 text-text-secondary font-medium">
+                           <div className="w-7 h-7 rounded-full bg-blue-primary text-white text-[11px] flex items-center justify-center font-bold">
+                             {dayName[0]}
+                           </div>
+                           <div className="flex-1">
+                             <span className="font-bold text-text-primary uppercase tracking-wide text-[11px] inline-block w-12">{dayName}</span>
+                             <span>{formatTime(rule.start_time)} - {formatTime(rule.end_time)}</span>
+                           </div>
+                        </div>
+                      );
+                   })}
+                   {(!availabilityData?.rules || availabilityData.rules.filter(r => r.is_available).length === 0) && (
+                     <div className="text-sm font-medium text-text-muted">No availability set.</div>
+                   )}
                 </div>
                 <p>This event uses your default weekly hours. To change specific dates, manage them in the main Availability tab.</p>
               </div>
