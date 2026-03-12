@@ -21,6 +21,7 @@ function Dashboard() {
   const [activeTab, setActiveTab] = useState('active');
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   
   // Modal states
   const [previewEvent, setPreviewEvent] = useState(null);
@@ -28,8 +29,10 @@ function Dashboard() {
   const [shareEvent, setShareEvent] = useState(null);
 
   const filtered = useMemo(
-    () => items.filter((e) => (activeTab === 'active' ? e.is_active : !e.is_active)),
-    [items, activeTab]
+    () => items
+      .filter((e) => (activeTab === 'active' ? e.is_active : !e.is_active))
+      .filter((e) => !searchQuery.trim() || e.name.toLowerCase().includes(searchQuery.toLowerCase())),
+    [items, activeTab, searchQuery]
   );
 
   const counts = useMemo(
@@ -81,7 +84,7 @@ function Dashboard() {
          </div>
       </div>
 
-      <div className="page-enter max-w-[1080px] w-full mx-auto pt-8 px-8 pb-20">
+      <div className="page-enter max-w-[1280px] w-full mx-auto pt-8 px-8 pb-20">
         
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
@@ -169,7 +172,12 @@ function Dashboard() {
       {/* Search */}
       <div className="relative max-w-[340px] mb-8">
         <Search className="w-4 h-4 absolute left-3 top-[18px] -translate-y-1/2 text-text-muted stroke-[2]" />
-        <Input placeholder="Search event types" className="!pl-9 !h-[36px] text-sm placeholder:text-text-muted !bg-white focus:!bg-white" />
+        <Input
+          placeholder="Search event types"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="!pl-9 !h-[36px] text-sm placeholder:text-text-muted !bg-white focus:!bg-white"
+        />
       </div>
 
       {/* Event List Section */}
@@ -195,28 +203,29 @@ function Dashboard() {
              <Button size="sm" variant="ghost" onClick={reload} className="hover:bg-danger/10 text-danger">Retry</Button>
            </div>
         ) : loading ? (
-           <div className="bg-white border border-border shadow-sm rounded-xl overflow-hidden flex flex-col">
-              <EventTypeCardSkeleton />
-              <EventTypeCardSkeleton />
+           <div className="flex flex-col gap-3">
+              <div className="bg-white border border-border shadow-sm rounded-xl overflow-hidden"><EventTypeCardSkeleton /></div>
+              <div className="bg-white border border-border shadow-sm rounded-xl overflow-hidden"><EventTypeCardSkeleton /></div>
            </div>
         ) : filtered.length === 0 ? (
            <div className="bg-white border border-border shadow-sm rounded-xl overflow-hidden flex flex-col p-16 text-center">
-             <h2 className="text-xl font-extrabold text-text-primary mb-2">No event types</h2>
-             <p className="text-text-secondary text-sm font-medium">Please create an event type to get started.</p>
+             <h2 className="text-xl font-extrabold text-text-primary mb-2">{searchQuery ? 'No results found' : 'No event types'}</h2>
+             <p className="text-text-secondary text-sm font-medium">{searchQuery ? `No event types match "${searchQuery}".` : 'Please create an event type to get started.'}</p>
            </div>
         ) : (
-           <div className="bg-white border border-border shadow-sm rounded-xl overflow-hidden flex flex-col">
+           <div className="flex flex-col gap-3">
              {filtered.map((event) => (
-               <EventTypeCard
-                 key={event.id}
-                 event={event}
-                 onCopyLink={() => handleCopyLink(event)}
-                 onEdit={() => navigate(`/event-types/${event.id}/edit`)}
-                 onDelete={() => setDeleteTarget(event)}
-                 onBookLink={() => setPreviewEvent(event)}
-                 onOfferTimes={() => setOfferTimesEvent(event)}
-                 onShare={() => setShareEvent(event)}
-               />
+               <div key={event.id} className="bg-white border border-border shadow-sm rounded-xl overflow-hidden">
+                 <EventTypeCard
+                   event={event}
+                   onCopyLink={() => handleCopyLink(event)}
+                   onEdit={() => navigate(`/event-types/${event.id}/edit`)}
+                   onDelete={() => setDeleteTarget(event)}
+                   onBookLink={() => setPreviewEvent(event)}
+                   onOfferTimes={() => setOfferTimesEvent(event)}
+                   onShare={() => setShareEvent(event)}
+                 />
+               </div>
              ))}
            </div>
         )}
