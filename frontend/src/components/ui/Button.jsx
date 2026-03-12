@@ -24,15 +24,19 @@ function Spinner() {
   );
 }
 
-function Button({ variant = 'primary', size = 'md', loading = false, children, className = '', ...props }) {
+const Button = React.forwardRef(function Button(
+  { variant = 'primary', size = 'md', loading = false, children, className = '', ...props },
+  ref
+) {
   const cls = `${base} ${variants[variant]} ${sizes[size]} ${className}`;
   return (
-    <button type="button" className={cls} disabled={loading || props.disabled} {...props}>
+    <button ref={ref} type="button" className={cls} disabled={loading || props.disabled} {...props}>
       {loading && <Spinner />}
       {children}
     </button>
   );
-}
+});
 
 export default Button;
+
 

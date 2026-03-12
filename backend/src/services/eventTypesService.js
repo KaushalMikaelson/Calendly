@@ -39,9 +39,9 @@ async function createEventType(payload) {
     `
     INSERT INTO event_types (
       user_id, name, slug, duration, description, color, location,
-      buffer_before, buffer_after, is_active
+      buffer_before, buffer_after, is_active, scheduled_date, scheduled_time
     )
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,true)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,true,$10,$11)
     RETURNING *;
   `,
     [
@@ -54,6 +54,8 @@ async function createEventType(payload) {
       location || 'Google Meet',
       Number(buffer_before) || 0,
       Number(buffer_after) || 0,
+      payload.scheduled_date || null,
+      payload.scheduled_time || null,
     ]
   );
 
@@ -101,6 +103,8 @@ async function updateEventType(id, payload) {
       buffer_before = $8,
       buffer_after = $9,
       is_active = COALESCE($10, is_active),
+      scheduled_date = COALESCE($11, scheduled_date),
+      scheduled_time = COALESCE($12, scheduled_time),
       updated_at = NOW()
     WHERE id = $1
     RETURNING *;
@@ -116,6 +120,8 @@ async function updateEventType(id, payload) {
       Number(payload.buffer_before ?? existing.buffer_before),
       Number(payload.buffer_after ?? existing.buffer_after),
       payload.is_active,
+      payload.scheduled_date !== undefined ? payload.scheduled_date : existing.scheduled_date,
+      payload.scheduled_time !== undefined ? payload.scheduled_time : existing.scheduled_time,
     ]
   );
 

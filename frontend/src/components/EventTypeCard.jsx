@@ -5,8 +5,29 @@ export function EventTypeCardSkeleton() {
   return <div className="h-[100px] w-full border-b border-border bg-gray-50 animate-pulse" />;
 }
 
-function EventTypeCard({ event, onCopyLink, onEdit, onDelete, onBookLink, onOfferTimes, onShare }) {
+function formatMeetingDateTime(isoString) {
+  const date = new Date(isoString);
+  const dateStr = date.toLocaleDateString('en-US', {
+    weekday: 'short', month: 'short', day: 'numeric', year: 'numeric',
+  });
+  const timeStr = date.toLocaleTimeString('en-US', {
+    hour: 'numeric', minute: '2-digit',
+  });
+  return `${dateStr} at ${timeStr}`;
+}
+
+function EventTypeCard({ event, nextMeeting, onCopyLink, onEdit, onDelete, onBookLink, onOfferTimes, onShare }) {
   const [menuOpen, setMenuOpen] = useState(false);
+
+  let meetingLabel = null;
+  if (event.scheduled_date) {
+    const d = new Date(event.scheduled_date);
+    const dateStr = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+    const timeStr = event.scheduled_time || 'No time set';
+    meetingLabel = `${dateStr} at ${timeStr}`;
+  } else if (nextMeeting) {
+    meetingLabel = formatMeetingDateTime(nextMeeting.start_time);
+  }
 
   return (
     <div className="relative group flex items-center p-4 pr-6 bg-white hover:bg-gray-50 transition-colors duration-fast">
@@ -25,9 +46,18 @@ function EventTypeCard({ event, onCopyLink, onEdit, onDelete, onBookLink, onOffe
            <div className="text-[13px] font-medium text-text-secondary mt-1 max-w-[500px] truncate">
              {event.duration} min • {event.location || 'No location'} • One-on-One
            </div>
-           <div className="text-[13px] font-medium text-text-muted">
-             Weekdays, 9 am - 5 pm
-           </div>
+           {meetingLabel ? (
+             <div className="flex items-center gap-1.5 mt-0.5">
+               <CalendarDays className="w-3.5 h-3.5 text-blue-primary shrink-0" strokeWidth={2} />
+               <span className="text-[12px] font-semibold text-blue-primary">
+                 {meetingLabel}
+               </span>
+             </div>
+           ) : (
+             <div className="text-[12px] font-medium text-text-muted mt-0.5">
+               Not scheduled
+             </div>
+           )}
         </div>
       </div>
       

@@ -1,6 +1,6 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, HelpCircle, ChevronDown, Search, ExternalLink, Users, ArrowRight } from 'lucide-react';
+import { Plus, HelpCircle, ChevronDown, Search, ExternalLink, Users } from 'lucide-react';
 import { useEventTypes } from '../hooks/useEventTypes';
 import Button from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
@@ -11,8 +11,9 @@ import EventTypeCard from '../components/EventTypeCard';
 import BookingPreviewModal from '../components/BookingPreviewModal';
 import OfferTimesModal from '../components/OfferTimesModal';
 import ShareModal from '../components/ShareModal';
-import { eventTypesApi } from '../api';
+import { eventTypesApi, meetingsApi } from '../api';
 import { useToast } from '../components/ui/Toast';
+import CreateDropdown from '../components/CreateDropdown';
 
 function Dashboard() {
   const navigate = useNavigate();
@@ -21,12 +22,36 @@ function Dashboard() {
   const [activeTab, setActiveTab] = useState('active');
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const createBtnRef = useRef(null);
   const [searchQuery, setSearchQuery] = useState('');
   
   // Modal states
   const [previewEvent, setPreviewEvent] = useState(null);
   const [offerTimesEvent, setOfferTimesEvent] = useState(null);
   const [shareEvent, setShareEvent] = useState(null);
+
+  // Fetch upcoming meetings to show next booked date on each event type card
+  const [upcomingMeetings, setUpcomingMeetings] = useState([]);
+  useEffect(() => {
+    meetingsApi.getAll('upcoming')
+      .then((res) => setUpcomingMeetings(res.data || res))
+      .catch(() => {}); // fail silently — not critical
+  }, []);
+
+  // Build a map: event_type_id → next upcoming meeting (sorted by start_time asc)
+  const nextMeetingByType = useMemo(() => {
+    const map = {};
+    const now = new Date();
+    upcomingMeetings
+      .filter((m) => m.status !== 'cancelled' && new Date(m.start_time) >= now)
+      .sort((a, b) => new Date(a.start_time) - new Date(b.start_time))
+      .forEach((m) => {
+        // Coerce to string — IDs can be number from one API and string from another
+        const tid = String(m.event_type_id ?? m.event_type?.id ?? '');
+        if (tid && !map[tid]) map[tid] = m;
+      });
+    return map;
+  }, [upcomingMeetings]);
 
   const filtered = useMemo(
     () => items
@@ -95,6 +120,7 @@ function Dashboard() {
         
         <div className="relative z-50">
           <Button
+            ref={createBtnRef}
             size="md"
             onClick={() => setDropdownOpen((prev) => !prev)}
             className="flex items-center gap-2 shadow-sm px-6 rounded-full"
@@ -103,62 +129,12 @@ function Dashboard() {
             Create
             <ChevronDown className={`w-4 h-4 ml-1 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} strokeWidth={2.5} />
           </Button>
-          {dropdownOpen && (
-            <>
-              <div className="fixed inset-0 z-40" onClick={() => setDropdownOpen(false)} />
-              <div className="absolute right-0 top-full mt-2 w-[380px] bg-white border border-border shadow-modal rounded-[8px] z-50 animate-dropdown text-left pb-1 overflow-hidden">
-                <div className="px-5 pt-5 pb-3">
-                  <h3 className="font-bold text-[#1A2E46] text-[15px] mb-3">Event type</h3>
-                  
-                  <button type="button" onClick={() => navigate('/event-types/new')} className="w-full text-left mb-4 flex flex-col hover:bg-[#F8F9FA] -mx-2 px-2 py-1.5 rounded-lg transition-colors group">
-                    <span className="font-bold text-[#006BFF] text-[15.5px]">One-on-one</span>
-                    <div className="flex items-center gap-2 text-[15px] text-[#1A2E46] mt-0.5 tracking-tight">
-                      <span>1 host</span> <ArrowRight className="w-4 h-4 stroke-[1.5]" /> <span>1 invitee</span>
-                    </div>
-                    <span className="text-[14.5px] text-[#4A6380] mt-0.5">Good for coffee chats, 1:1 interviews, etc.</span>
-                  </button>
-                  
-                  <button type="button" onClick={() => navigate('/event-types/new')} className="w-full text-left mb-4 flex flex-col hover:bg-[#F8F9FA] -mx-2 px-2 py-1.5 rounded-lg transition-colors group">
-                    <span className="font-bold text-[#006BFF] text-[15.5px]">Group</span>
-                    <div className="flex items-center gap-2 text-[15px] text-[#1A2E46] mt-0.5 tracking-tight">
-                      <span>1 host</span> <ArrowRight className="w-4 h-4 stroke-[1.5]" /> <span>Multiple invitees</span>
-                    </div>
-                    <span className="text-[14.5px] text-[#4A6380] mt-0.5">Webinars, online classes, etc.</span>
-                  </button>
-                  
-                  <button type="button" onClick={() => navigate('/event-types/new')} className="w-full text-left mb-4 flex flex-col hover:bg-[#F8F9FA] -mx-2 px-2 py-1.5 rounded-lg transition-colors group">
-                    <span className="font-bold text-[#006BFF] text-[15.5px]">Round robin</span>
-                    <div className="flex items-center gap-2 text-[15px] text-[#1A2E46] mt-0.5 tracking-tight">
-                      <span>Rotating hosts</span> <ArrowRight className="w-4 h-4 stroke-[1.5]" /> <span>1 invitee</span>
-                    </div>
-                    <span className="text-[14.5px] text-[#4A6380] mt-0.5">Distribute meetings between team members</span>
-                  </button>
-                  
-                  <button type="button" onClick={() => navigate('/event-types/new')} className="w-full text-left mb-2 flex flex-col hover:bg-[#F8F9FA] -mx-2 px-2 py-1.5 rounded-lg transition-colors group">
-                    <span className="font-bold text-[#006BFF] text-[15.5px]">Collective</span>
-                    <div className="flex items-center gap-2 text-[15px] text-[#1A2E46] mt-0.5 tracking-tight">
-                      <span>Multiple hosts</span> <ArrowRight className="w-4 h-4 stroke-[1.5]" /> <span>1 invitee</span>
-                    </div>
-                    <span className="text-[14.5px] text-[#4A6380] mt-0.5">Panel interviews, group sales calls, etc.</span>
-                  </button>
-                </div>
-                
-                <div className="border-t border-[#E5E7EB] px-5 pt-4 pb-3">
-                  <h3 className="font-bold text-[#1A2E46] text-[15px] mb-3">More ways to meet</h3>
-                  
-                  <button type="button" onClick={() => navigate('/event-types/new')} className="w-full text-left mb-4 flex flex-col hover:bg-[#F8F9FA] -mx-2 px-2 py-1.5 rounded-lg transition-colors group">
-                    <span className="font-bold text-[#006BFF] text-[15.5px]">One-off meeting</span>
-                    <span className="text-[14.5px] text-[#4A6380] mt-0.5">Offer time outside your normal schedule</span>
-                  </button>
-                  
-                  <button type="button" onClick={() => navigate('/event-types/new')} className="w-full text-left mb-2 flex flex-col hover:bg-[#F8F9FA] -mx-2 px-2 py-1.5 rounded-lg transition-colors group">
-                    <span className="font-bold text-[#006BFF] text-[15.5px]">Meeting poll</span>
-                    <span className="text-[14.5px] text-[#4A6380] mt-0.5">Let invitees vote on a time to meet</span>
-                  </button>
-                </div>
-              </div>
-            </>
-          )}
+          <CreateDropdown
+            open={dropdownOpen}
+            onClose={() => setDropdownOpen(false)}
+            anchorRef={createBtnRef}
+            side="right"
+          />
         </div>
       </div>
 
@@ -204,8 +180,8 @@ function Dashboard() {
            </div>
         ) : loading ? (
            <div className="flex flex-col gap-3">
-              <div className="bg-white border border-border shadow-sm rounded-xl overflow-hidden"><EventTypeCardSkeleton /></div>
-              <div className="bg-white border border-border shadow-sm rounded-xl overflow-hidden"><EventTypeCardSkeleton /></div>
+              <div className="bg-white border border-border shadow-sm rounded-xl"><EventTypeCardSkeleton /></div>
+              <div className="bg-white border border-border shadow-sm rounded-xl"><EventTypeCardSkeleton /></div>
            </div>
         ) : filtered.length === 0 ? (
            <div className="bg-white border border-border shadow-sm rounded-xl overflow-hidden flex flex-col p-16 text-center">
@@ -215,9 +191,10 @@ function Dashboard() {
         ) : (
            <div className="flex flex-col gap-3">
              {filtered.map((event) => (
-               <div key={event.id} className="bg-white border border-border shadow-sm rounded-xl overflow-hidden">
+               <div key={event.id} className="bg-white border border-border shadow-sm rounded-xl">
                  <EventTypeCard
                    event={event}
+                   nextMeeting={nextMeetingByType[String(event.id)] || null}
                    onCopyLink={() => handleCopyLink(event)}
                    onEdit={() => navigate(`/event-types/${event.id}/edit`)}
                    onDelete={() => setDeleteTarget(event)}

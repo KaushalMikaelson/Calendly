@@ -31,19 +31,75 @@ function EventTypeForm() {
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(isEdit);
   
-  const [activeSection, setActiveSection] = useState('duration'); // 'duration', 'location', etc.
-  
+  const [activeSection, setActiveSection] = useState('duration');
+
+  // ── Form state (must be declared before calendar memos that use form.duration) ──
   const [form, setForm] = useState({
     name: 'New Meeting',
     slug: 'new-meeting',
     duration: 30,
     description: '',
     location: '',
-    color: '#7C3AED', // Match the purple from screenshot
+    color: '#7C3AED',
     buffer_before: 0,
     buffer_after: 0,
   });
   const [errors, setErrors] = useState({});
+  // Track whether the user has manually edited the slug.
+  // Once true, name changes no longer overwrite it.
+  const [slugTouched, setSlugTouched] = useState(false);
+
+  // ── Preview calendar state ──────────────────────────────────────────────
+  const today = useMemo(() => { const d = new Date(); d.setHours(0,0,0,0); return d; }, []);
+  const [previewMonth, setPreviewMonth] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [selectedTime, setSelectedTime] = useState(null);
+
+  // Build calendar grid (Sun-start)
+  const calendarDays = useMemo(() => {
+    const year = previewMonth.getFullYear();
+    const month = previewMonth.getMonth();
+    const firstDay = new Date(year, month, 1).getDay(); // 0=Sun
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const cells = [];
+    for (let i = 0; i < firstDay; i++) cells.push(null);
+    for (let d = 1; d <= daysInMonth; d++) cells.push(new Date(year, month, d));
+    return cells;
+  }, [previewMonth]);
+
+  const monthLabel = useMemo(() =>
+    previewMonth.toLocaleString('default', { month: 'long', year: 'numeric' }),
+    [previewMonth]
+  );
+
+  // Generate time slots 9am–5pm based on duration
+  const timeSlots = useMemo(() => {
+    const slots = [];
+    const dur = Number(form.duration) || 30;
+    let start = 9 * 60;
+    const end = 17 * 60;
+    while (start + dur <= end) {
+      const h = Math.floor(start / 60);
+      const m = start % 60;
+      const period = h < 12 ? 'AM' : 'PM';
+      const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+      slots.push(`${h12}:${m.toString().padStart(2, '0')} ${period}`);
+      start += dur;
+    }
+    return slots;
+  }, [form.duration]);
+
+  const isDateSelectable = (date) => {
+    if (!date) return false;
+    if (date < today) return false;
+    const day = date.getDay();
+    return day !== 0 && day !== 6;
+  };
+
+  const isSameDay = (a, b) =>
+    a && b && a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+  // ────────────────────────────────────────────────────────────────────────
 
   useEffect(() => {
     if (!isEdit) return;
@@ -67,6 +123,15 @@ function EventTypeForm() {
           buffer_before: existing.buffer_before || 0,
           buffer_after: existing.buffer_after || 0,
         });
+        if (existing.scheduled_date) {
+          setSelectedDate(new Date(existing.scheduled_date));
+          setPreviewMonth(new Date(existing.scheduled_date));
+        }
+        if (existing.scheduled_time) {
+          setSelectedTime(existing.scheduled_time);
+        }
+        // In edit mode the slug already exists — treat it as touched
+        setSlugTouched(true);
       } catch (e) {
         showToast({ message: e.message, type: 'error' });
       } finally {
@@ -91,10 +156,25 @@ function EventTypeForm() {
 
   const handleChange = (field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }));
-    if (field === 'name' && !isEdit) {
+    // Auto-generate slug from name ONLY if the user hasn't manually set the slug yet
+    if (field === 'name' && !isEdit && !slugTouched) {
       const slug = generateSlug(value);
-      setForm((prev) => ({ ...prev, slug }));
+      setForm((prev) => ({ ...prev, name: value, slug }));
     }
+  };
+
+  // Called when the user types directly into the slug input
+  const handleSlugChange = (e) => {
+    setSlugTouched(true);
+    // Allow free typing — only strip characters that are truly invalid
+    const raw = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '');
+    setForm((prev) => ({ ...prev, slug: raw }));
+    setErrors((prev) => ({ ...prev, slug: undefined }));
+  };
+
+  // On blur, clean up any leading/trailing hyphens
+  const handleSlugBlur = () => {
+    setForm((prev) => ({ ...prev, slug: prev.slug.replace(/(^-+|-+$)/g, '') }));
   };
 
   const handleLocationSelect = (locId) => {
@@ -113,6 +193,8 @@ function EventTypeForm() {
         duration: Number(form.duration),
         buffer_before: Number(form.buffer_before),
         buffer_after: Number(form.buffer_after),
+        scheduled_date: selectedDate ? selectedDate.toISOString() : null,
+        scheduled_time: selectedTime || null,
       };
       if (isEdit) {
         await eventTypesApi.update(id, payload);
@@ -123,7 +205,23 @@ function EventTypeForm() {
       }
       navigate('/dashboard');
     } catch (err) {
-      showToast({ message: err.message, type: 'error' });
+      // Detect duplicate slug constraint violation and show it as a field error
+      const isDuplicateSlug =
+        err.message?.toLowerCase().includes('slug') ||
+        err.message?.toLowerCase().includes('unique constraint') ||
+        err.message?.toLowerCase().includes('duplicate key');
+
+      if (isDuplicateSlug) {
+        setErrors((prev) => ({
+          ...prev,
+          slug: 'This URL is already taken — please choose a different one.',
+        }));
+        // Open the Host & Links section so the user can see the error
+        setActiveSection('host');
+        showToast({ message: 'URL slug is already in use. Please choose a unique one.', type: 'error' });
+      } else {
+        showToast({ message: err.message, type: 'error' });
+      }
     } finally {
       setLoading(false);
     }
@@ -171,7 +269,7 @@ function EventTypeForm() {
           {/* Card Wrapper mimicking actual booking page */}
           <div className="w-full max-w-[800px] bg-white rounded-xl shadow-lg border border-border overflow-hidden self-start flex flex-col md:flex-row min-h-[500px]">
              
-             {/* Left Column of Form (Details) */}
+             {/* Left Column: Details + selected date/time */}
              <div className="w-full md:w-[40%] p-8 border-b md:border-b-0 md:border-r border-border bg-white flex flex-col">
                <h3 className="text-base font-bold text-text-secondary mb-1">Kaushal Kumar</h3>
                <h1 className="text-3xl font-extrabold text-text-primary mb-6 tracking-tight">{form.name || 'Event Name'}</h1>
@@ -193,6 +291,21 @@ function EventTypeForm() {
                      <span className="leading-snug">{form.location.startsWith('http') ? 'Web conferencing details provided upon confirmation.' : form.location}</span>
                    </div>
                  )}
+
+                 {/* Selected date & time pill */}
+                 {selectedDate && (
+                   <div className="flex items-start gap-3 mt-1">
+                     <CalendarDays className="w-6 h-6 text-text-muted shrink-0 mt-0.5" strokeWidth={1.5} />
+                     <div className="flex flex-col gap-0.5">
+                       <span className="text-text-primary">
+                         {selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+                       </span>
+                       {selectedTime && (
+                         <span className="text-blue-primary font-bold">{selectedTime}</span>
+                       )}
+                     </div>
+                   </div>
+                 )}
                </div>
                
                {form.description && (
@@ -202,38 +315,120 @@ function EventTypeForm() {
                )}
              </div>
              
-             {/* Right Column of Form (Calendar Skeleton) */}
-             <div className="flex-1 p-8 bg-white flex flex-col items-center justify-start">
-                <h2 className="text-xl font-bold text-text-primary mb-8 self-center pr-4 text-center w-full">Select a Date & Time</h2>
-                
-                {/* Fake Calendar Grid */}
-                <div className="w-full max-w-[320px] mx-auto">
-                  <div className="flex items-center justify-between mb-6 px-2">
-                    <button type="button" className="text-text-muted"><ChevronDown className="w-5 h-5 rotate-90" /></button>
-                    <span className="text-[17px] font-medium text-text-primary">March 2026</span>
-                    <button type="button" className="w-9 h-9 flex items-center justify-center rounded-full bg-blue-50 text-blue-primary"><ChevronDown className="w-5 h-5 -rotate-90" /></button>
-                  </div>
-                  
-                  <div className="grid grid-cols-7 gap-y-4 text-center mb-2">
-                    {['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'].map(d => (
-                       <div key={d} className="text-[11px] font-bold text-text-muted tracking-widest">{d}</div>
-                    ))}
-                    
-                    {/* Dummy Dates */}
-                    {[...Array(31)].map((_, i) => (
-                       <div key={i} className="flex justify-center">
-                         <div className={`w-11 h-11 flex items-center justify-center rounded-full text-[15px] font-semibold transition-colors ${
-                           i === 12 
-                             ? 'bg-blue-50 text-blue-600 font-bold' 
-                             : i > 25 ? 'text-gray-300' : 'text-text-primary hover:bg-gray-100 cursor-pointer'
-                         }`}>
-                           {i + 1}
-                         </div>
+             {/* Right Column: Interactive Calendar + Time Slots */}
+             <div className="flex-1 flex overflow-hidden">
+
+               {/* Calendar panel */}
+               <div className={`flex flex-col p-6 transition-all duration-300 ${
+                 selectedDate ? 'w-[55%]' : 'w-full'
+               }`}>
+                 <h2 className="text-[18px] font-bold text-text-primary mb-5 text-center">Select a Date &amp; Time</h2>
+
+                 {/* Month navigation */}
+                 <div className="flex items-center justify-between mb-4 px-1">
+                   <button
+                     type="button"
+                     onClick={() => setPreviewMonth(m => new Date(m.getFullYear(), m.getMonth() - 1, 1))}
+                     className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-text-muted hover:text-text-primary transition-colors"
+                   >
+                     <ChevronDown className="w-4 h-4 rotate-90" />
+                   </button>
+                   <span className="text-[15px] font-semibold text-text-primary">{monthLabel}</span>
+                   <button
+                     type="button"
+                     onClick={() => setPreviewMonth(m => new Date(m.getFullYear(), m.getMonth() + 1, 1))}
+                     className="w-8 h-8 flex items-center justify-center rounded-full bg-blue-50 text-blue-primary hover:bg-blue-100 transition-colors"
+                   >
+                     <ChevronDown className="w-4 h-4 -rotate-90" />
+                   </button>
+                 </div>
+
+                 {/* Day headers */}
+                 <div className="grid grid-cols-7 mb-2">
+                   {['SUN','MON','TUE','WED','THU','FRI','SAT'].map(d => (
+                     <div key={d} className="text-center text-[10px] font-bold text-text-muted tracking-widest py-1">{d}</div>
+                   ))}
+                 </div>
+
+                 {/* Date grid */}
+                 <div className="grid grid-cols-7 gap-y-1">
+                   {calendarDays.map((date, idx) => {
+                     if (!date) return <div key={`blank-${idx}`} />;
+                     const selectable = isDateSelectable(date);
+                     const isSelected = isSameDay(date, selectedDate);
+                     const isToday = isSameDay(date, today);
+                     return (
+                       <div key={date.toISOString()} className="flex justify-center">
+                         <button
+                           type="button"
+                           disabled={!selectable}
+                            onClick={() => {
+                             if (selectable) {
+                               setSelectedDate(date);
+                               setSelectedTime(null); // clear time when date changes
+                             }
+                           }}
+                           className={`w-9 h-9 flex items-center justify-center rounded-full text-[13px] font-semibold transition-all
+                             ${ isSelected
+                               ? 'bg-blue-primary text-white shadow-sm'
+                               : isToday
+                               ? 'border-2 border-blue-primary text-blue-primary'
+                               : selectable
+                               ? 'text-text-primary hover:bg-blue-50 hover:text-blue-primary cursor-pointer'
+                               : 'text-gray-300 cursor-not-allowed'
+                             }`}
+                         >
+                           {date.getDate()}
+                         </button>
                        </div>
-                    ))}
-                  </div>
-                  <div className="text-sm font-semibold text-text-primary mt-6 text-center">India Standard Time</div>
-                </div>
+                     );
+                   })}
+                 </div>
+
+                 <div className="text-[11px] font-medium text-text-muted text-center mt-4">
+                   {Intl.DateTimeFormat().resolvedOptions().timeZone.replace(/_/g,' ')}
+                 </div>
+               </div>
+
+               {/* Time slots panel — slides in when a date is selected */}
+               {selectedDate && (
+                 <div className="w-[45%] border-l border-border flex flex-col overflow-hidden">
+                   <div className="px-3 pt-5 pb-2 shrink-0">
+                     <div className="text-[13px] font-bold text-text-primary">
+                       {selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                     </div>
+                   </div>
+                   <div className="flex-1 overflow-y-auto px-3 pb-4 space-y-2">
+                     {timeSlots.map(slot => {
+                       const isSelectedSlot = selectedTime === slot;
+                       return isSelectedSlot ? (
+                         /* When a slot is selected, split into time + Confirm button */
+                         <div key={slot} className="flex gap-1.5">
+                           <div className="flex-1 text-center py-2.5 rounded-xl bg-blue-primary text-white text-[13px] font-bold border border-blue-primary">
+                             {slot}
+                           </div>
+                           <button
+                             type="button"
+                             onClick={() => setSelectedTime(null)}
+                             className="flex-1 text-center py-2.5 rounded-xl bg-blue-primary text-white text-[13px] font-bold border border-blue-primary hover:bg-blue-700 transition-colors"
+                           >
+                             Confirm
+                           </button>
+                         </div>
+                       ) : (
+                         <button
+                           key={slot}
+                           type="button"
+                           onClick={() => setSelectedTime(slot)}
+                           className="w-full text-center py-2.5 rounded-xl border border-blue-200 text-blue-primary text-[13px] font-semibold hover:bg-blue-primary hover:text-white hover:border-blue-primary transition-all"
+                         >
+                           {slot}
+                         </button>
+                       );
+                     })}
+                   </div>
+                 </div>
+               )}
              </div>
           </div>
         </div>
@@ -439,8 +634,10 @@ function EventTypeForm() {
                 <Input
                   label="URL Slug"
                   value={form.slug}
-                  onChange={(e) => handleChange('slug', generateSlug(e.target.value))}
+                  onChange={handleSlugChange}
+                  onBlur={handleSlugBlur}
                   error={errors.slug}
+                  placeholder="your-custom-slug"
                 />
                 <p className="text-[12px] font-medium text-text-muted mt-2 truncate">Link: <span className="text-blue-primary">{bookingLink}</span></p>
                 

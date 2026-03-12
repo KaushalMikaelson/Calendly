@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { Link2, CalendarDays, Clock, Users, Workflow, LayoutGrid, Route, CircleDollarSign, BarChart2, Shield, HelpCircle, ChevronLeft, Plus } from 'lucide-react';
+import CreateDropdown from '../CreateDropdown';
 
 const mainNavItems = [
   { to: '/dashboard', label: 'Scheduling', icon: Link2, iconClass: 'rotate-45' },
@@ -18,6 +19,9 @@ const bottomNavItems = [
 ];
 
 function Sidebar({ collapsed, onToggle }) {
+  const [createOpen, setCreateOpen] = useState(false);
+  const createBtnRef = useRef(null);
+
   return (
     <aside
       className="bg-white border-r border-[#E5E7EB] flex flex-col h-full shrink-0 shadow-[1px_0_10px_rgba(0,0,0,0.02)] hidden md:flex"
@@ -30,9 +34,8 @@ function Sidebar({ collapsed, onToggle }) {
       {/* Header Logo Area */}
       <div
         className="px-3 py-6 flex items-center mb-2"
-        style={{ justifyContent: collapsed ? 'center' : 'space-between', paddingLeft: collapsed ? 0 : undefined, paddingRight: collapsed ? 0 : undefined }}
+        style={{ justifyContent: collapsed ? 'center' : 'space-between' }}
       >
-        {/* Logo */}
         <div className="flex items-center gap-2 overflow-hidden" style={{ minWidth: 0 }}>
           <div
             className="w-8 h-8 rounded-full bg-[#006BFF] flex items-center justify-center text-white scale-90 relative overflow-hidden shrink-0"
@@ -55,7 +58,6 @@ function Sidebar({ collapsed, onToggle }) {
           </span>
         </div>
 
-        {/* Toggle chevron — hidden when collapsed so logo stays centered */}
         {!collapsed && (
           <button
             onClick={onToggle}
@@ -67,7 +69,7 @@ function Sidebar({ collapsed, onToggle }) {
         )}
       </div>
 
-      {/* Expand button shown when collapsed (centred below logo) */}
+      {/* Expand button when collapsed */}
       {collapsed && (
         <div className="flex justify-center mb-2">
           <button
@@ -80,20 +82,33 @@ function Sidebar({ collapsed, onToggle }) {
         </div>
       )}
 
-      {/* Primary Action */}
-      <div className="px-3 mb-6">
+      {/* Primary Action — Create button */}
+      <div className="px-3 mb-6 relative">
         {collapsed ? (
           <button
+            ref={createBtnRef}
+            onClick={() => setCreateOpen((v) => !v)}
             className="w-full flex items-center justify-center py-2.5 border border-[#006BFF] text-[#006BFF] rounded-full hover:bg-blue-50 transition-colors shadow-sm"
             title="Create"
           >
             <Plus className="w-4 h-4 stroke-[3]" />
           </button>
         ) : (
-          <button className="w-full flex items-center justify-center gap-2 py-3 border border-[#006BFF] text-[#006BFF] rounded-full hover:bg-blue-50 font-bold text-[14px] transition-colors shadow-sm">
+          <button
+            ref={createBtnRef}
+            onClick={() => setCreateOpen((v) => !v)}
+            className="w-full flex items-center justify-center gap-2 py-3 border border-[#006BFF] text-[#006BFF] rounded-full hover:bg-blue-50 font-bold text-[14px] transition-colors shadow-sm"
+          >
             <Plus className="w-4 h-4 stroke-[3]" /> Create
           </button>
         )}
+
+        <CreateDropdown
+          open={createOpen}
+          onClose={() => setCreateOpen(false)}
+          anchorRef={createBtnRef}
+          side="left"
+        />
       </div>
 
       {/* Main Nav */}
@@ -125,7 +140,7 @@ function Sidebar({ collapsed, onToggle }) {
           );
         })}
 
-        {/* Upgrade Plan Banner Link */}
+        {/* Upgrade Plan */}
         <div className="mt-4 px-0">
           <NavLink
             to="/upgrade"
@@ -175,7 +190,7 @@ function Sidebar({ collapsed, onToggle }) {
         </div>
       </nav>
 
-      {/* Footer Nav */}
+      {/* Footer */}
       <div className="px-2 pt-3 pb-6 mt-auto">
         <button
           className={`flex items-center w-full text-left rounded-lg text-text-primary hover:bg-gray-50 transition-colors text-[14px] font-bold ${
