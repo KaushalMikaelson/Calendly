@@ -7,7 +7,23 @@ const api = axios.create({
 
 api.interceptors.response.use(
   (res) => res.data,
-  (err) => {
+  async (err) => {
+    const config = err.config;
+
+    // Automatic retry for sleeping backend (network error/timeout or 5xx)
+    if (config && (!err.response || err.response.status >= 500)) {
+      config.retryCount = config.retryCount || 0;
+      
+      const maxRetries = 5;
+      if (config.retryCount < maxRetries) {
+        config.retryCount += 1;
+        // Exponential backoff: Wait before retry (1s, 2s, 4s, 8s, 16s)
+        const delay = Math.pow(2, config.retryCount - 1) * 1000;
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        return api(config);
+      }
+    }
+
     const message = err.response?.data?.message || 'Something went wrong';
     return Promise.reject(new Error(message));
   }
