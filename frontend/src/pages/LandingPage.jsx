@@ -153,9 +153,9 @@ function LandingPage() {
                    <div className="flex-1">
                       <h3 className="text-xl font-bold mb-6">Select a Date & Time</h3>
                       <div className="grid grid-cols-7 gap-y-3 gap-x-1 text-center text-sm font-medium">
-                        {['S','M','T','W','T','F','S'].map(d => <div key={d} className="text-text-muted">{d}</div>)}
+                        {['S','M','T','W','T','F','S'].map((d, i) => <div key={`day-${i}`} className="text-text-muted">{d}</div>)}
                         {Array.from({ length: 31 }).map((_, i) => (
-                           <div key={i} className={`w-8 h-8 md:w-10 md:h-10 mx-auto flex items-center justify-center rounded-full ${i === 14 ? 'bg-blue-primary text-white shadow-button ring-4 ring-blue-100' : 'text-text-primary hover:bg-blue-50 cursor-pointer transition-colors'}`}>
+                           <div key={`date-${i}`} className={`w-8 h-8 md:w-10 md:h-10 mx-auto flex items-center justify-center rounded-full ${i === 14 ? 'bg-blue-primary text-white shadow-button ring-4 ring-blue-100' : 'text-text-primary hover:bg-blue-50 cursor-pointer transition-colors'}`}>
                              {i + 1}
                            </div>
                         ))}
@@ -197,7 +197,7 @@ function LandingPage() {
               ].map((f, i) => {
                 const Icon = f.icon;
                 return (
-                  <div key={i} className="bg-white rounded-[24px] p-8 shadow-sm border border-border/50 hover:shadow-card-hover transition-all duration-smooth hover:-translate-y-1">
+                  <div key={`feature-${i}`} className="bg-white rounded-[24px] p-8 shadow-sm border border-border/50 hover:shadow-card-hover transition-all duration-smooth hover:-translate-y-1">
                     <div className="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center mb-6 text-blue-primary">
                       <Icon className="w-7 h-7" />
                     </div>
