@@ -1,7 +1,7 @@
 # Calendly Clone — Full Stack Scheduling App
 
 ## Live Demo
-[deployed URL here]
+[https://calendly-frontend-1rqg.onrender.com/]
 
 ## Tech Stack
 | Layer | Technology |
