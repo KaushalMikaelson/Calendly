@@ -25,10 +25,10 @@ function Dashboard() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const createBtnRef = useRef(null);
   const [searchQuery, setSearchQuery] = useState('');
-  
+
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const profileBtnRef = useRef(null);
-  
+
   // Modal states
   const [previewEvent, setPreviewEvent] = useState(null);
   const [offerTimesEvent, setOfferTimesEvent] = useState(null);
@@ -39,7 +39,7 @@ function Dashboard() {
   useEffect(() => {
     meetingsApi.getAll('upcoming')
       .then((res) => setUpcomingMeetings(res.data || res))
-      .catch(() => {}); // fail silently — not critical
+      .catch(() => { }); // fail silently — not critical
   }, []);
 
   // Build a map: event_type_id → next upcoming meeting (sorted by start_time asc)
@@ -97,169 +97,174 @@ function Dashboard() {
 
   return (
     <div className="flex-1 flex flex-col min-h-screen">
-      
+
       {/* Top Bar matching new layout */}
       <div className="h-16 border-b border-border flex items-center justify-end px-6 sticky top-0 bg-white z-40">
-         <div className="flex items-center gap-4">
-           <button className="text-text-secondary hover:text-text-primary transition-colors">
-              <Users className="w-5 h-5" />
-           </button>
-           
-           <div className="relative z-50">
-             <button 
-               ref={profileBtnRef}
-               onClick={() => setProfileDropdownOpen((prev) => !prev)}
-               className={`flex items-center gap-2 p-1 pl-1.5 pr-1 rounded-full transition-colors ${profileDropdownOpen ? 'bg-white' : 'hover:bg-gray-50'}`}
-             >
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs transition-all ${
-                  profileDropdownOpen 
-                    ? 'bg-[#E5F0FF] text-[#0069FF] ring-[1.5px] ring-[#0069FF] ring-offset-[3px] ring-offset-white' 
-                    : 'bg-blue-50 text-blue-600'
+        <div className="flex items-center gap-4">
+          <button className="text-text-secondary hover:text-text-primary transition-colors">
+            <Users className="w-5 h-5" />
+          </button>
+
+          <div className="relative z-50">
+            <button
+              ref={profileBtnRef}
+              onClick={() => setProfileDropdownOpen((prev) => !prev)}
+              className={`flex items-center gap-2 p-1 pl-1.5 pr-1 rounded-full transition-colors ${profileDropdownOpen ? 'bg-white' : 'hover:bg-gray-50'}`}
+            >
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs transition-all ${profileDropdownOpen
+                  ? 'bg-[#E5F0FF] text-[#0069FF] ring-[1.5px] ring-[#0069FF] ring-offset-[3px] ring-offset-white'
+                  : 'bg-blue-50 text-blue-600'
                 }`}>
-                  K
-                </div>
-                <ChevronDown className={`w-4 h-4 transition-transform ${profileDropdownOpen ? 'rotate-180 text-text-primary' : 'text-text-muted'}`} />
-             </button>
-             <ProfileDropdown
-                open={profileDropdownOpen}
-                onClose={() => setProfileDropdownOpen(false)}
-                anchorRef={profileBtnRef}
-             />
-           </div>
-         </div>
+                K
+              </div>
+              <ChevronDown className={`w-4 h-4 transition-transform ${profileDropdownOpen ? 'rotate-180 text-text-primary' : 'text-text-muted'}`} />
+            </button>
+            <ProfileDropdown
+              open={profileDropdownOpen}
+              onClose={() => setProfileDropdownOpen(false)}
+              anchorRef={profileBtnRef}
+            />
+          </div>
+        </div>
       </div>
 
       <div className="page-enter max-w-[1280px] w-full mx-auto pt-8 px-8 pb-20">
-        
+
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-[26px] font-extrabold tracking-tight text-text-primary flex items-center gap-2">
             Scheduling
             <HelpCircle className="w-4 h-4 text-text-muted cursor-pointer hover:text-text-primary transition-colors" />
           </h1>
-        
-        <div className="relative z-50">
-          <Button
-            ref={createBtnRef}
-            size="md"
-            onClick={() => setDropdownOpen((prev) => !prev)}
-            className="flex items-center gap-2 shadow-sm px-6 rounded-full"
-          >
-            <Plus className="w-4 h-4 -mr-0.5" strokeWidth={3} />
-            Create
-            <ChevronDown className={`w-4 h-4 ml-1 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} strokeWidth={2.5} />
-          </Button>
-          <CreateDropdown
-            open={dropdownOpen}
-            onClose={() => setDropdownOpen(false)}
-            anchorRef={createBtnRef}
-            side="right"
+
+          <div className="relative z-50">
+            <Button
+              ref={createBtnRef}
+              size="md"
+              onClick={() => setDropdownOpen((prev) => !prev)}
+              className="flex items-center gap-2 shadow-sm px-6 rounded-full"
+            >
+              <Plus className="w-4 h-4 -mr-0.5" strokeWidth={3} />
+              Create
+              <ChevronDown className={`w-4 h-4 ml-1 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} strokeWidth={2.5} />
+            </Button>
+            <CreateDropdown
+              open={dropdownOpen}
+              onClose={() => setDropdownOpen(false)}
+              anchorRef={createBtnRef}
+              side="right"
+            />
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex items-center gap-8 border-b border-border text-[14px] font-bold text-text-secondary mb-6">
+          <button className="text-blue-600 border-b-[3px] border-blue-600 pb-3 -mb-[2px]">Event types</button>
+          <button className="pb-3 -mb-[2px] transition-colors border-b-[3px] border-transparent hover:text-text-primary">Single-use links</button>
+          <button className="pb-3 -mb-[2px] transition-colors border-b-[3px] border-transparent hover:text-text-primary">Meeting polls</button>
+        </div>
+
+        {/* Search */}
+        <div className="relative max-w-[340px] mb-8">
+          <Search className="w-4 h-4 absolute left-3 top-[18px] -translate-y-1/2 text-text-muted stroke-[2]" />
+          <Input
+            placeholder="Search event types"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="!pl-9 !h-[36px] text-sm placeholder:text-text-muted !bg-white focus:!bg-white"
           />
         </div>
-      </div>
 
-      {/* Tabs */}
-      <div className="flex items-center gap-8 border-b border-border text-[14px] font-bold text-text-secondary mb-6">
-        <button className="text-blue-600 border-b-[3px] border-blue-600 pb-3 -mb-[2px]">Event types</button>
-        <button className="pb-3 -mb-[2px] transition-colors border-b-[3px] border-transparent hover:text-text-primary">Single-use links</button>
-        <button className="pb-3 -mb-[2px] transition-colors border-b-[3px] border-transparent hover:text-text-primary">Meeting polls</button>
-      </div>
+        {/* Event List Section */}
+        <div className="mb-8 mt-12">
+          {/* User Header */}
+          <div className="flex items-center justify-between mb-4 px-1">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center font-bold text-xs text-blue-600">
+                K
+              </div>
+              <span className="font-extrabold text-[15px] tracking-tight text-text-primary">Kaushal Kumar</span>
+            </div>
 
-      {/* Search */}
-      <div className="relative max-w-[340px] mb-8">
-        <Search className="w-4 h-4 absolute left-3 top-[18px] -translate-y-1/2 text-text-muted stroke-[2]" />
-        <Input
-          placeholder="Search event types"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="!pl-9 !h-[36px] text-sm placeholder:text-text-muted !bg-white focus:!bg-white"
-        />
-      </div>
+            <button className="flex items-center gap-2 text-[14px] font-bold text-blue-600 hover:text-blue-800 transition-colors">
+              <ExternalLink className="w-4 h-4 stroke-[2]" /> View landing page
+            </button>
+          </div>
 
-      {/* Event List Section */}
-      <div className="mb-8 mt-12">
-        {/* User Header */}
-        <div className="flex items-center justify-between mb-4 px-1">
-           <div className="flex items-center gap-3">
-             <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center font-bold text-xs text-blue-600">
-               K
-             </div>
-             <span className="font-extrabold text-[15px] tracking-tight text-text-primary">Kaushal Kumar</span>
-           </div>
-           
-           <button className="flex items-center gap-2 text-[14px] font-bold text-blue-600 hover:text-blue-800 transition-colors">
-             <ExternalLink className="w-4 h-4 stroke-[2]" /> View landing page
-           </button>
+          {/* List Container */}
+          {error ? (
+            <div className="bg-dangerLight/20 border border-danger/20 rounded-xl px-4 py-3 text-sm font-medium text-danger flex items-center justify-between">
+              <span>{error}</span>
+              <Button size="sm" variant="ghost" onClick={reload} className="hover:bg-danger/10 text-danger">Retry</Button>
+            </div>
+          ) : loading ? (
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-col justify-center items-center py-6 gap-3">
+                 <span className="text-text-secondary font-medium">Loading your events...</span>
+                 <div className="w-48 h-1.5 bg-blue-50/50 rounded-full overflow-hidden">
+                    <div className="h-full bg-blue-600 rounded-full animate-pulse w-2/3 shadow-sm"></div>
+                 </div>
+              </div>
+              <div className="bg-white border border-border shadow-sm rounded-xl"><EventTypeCardSkeleton /></div>
+              <div className="bg-white border border-border shadow-sm rounded-xl"><EventTypeCardSkeleton /></div>
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="bg-white border border-border shadow-sm rounded-xl overflow-hidden flex flex-col p-16 text-center">
+              <h2 className="text-xl font-extrabold text-text-primary mb-2">{searchQuery ? 'No results found' : 'No event types'}</h2>
+              <p className="text-text-secondary text-sm font-medium">{searchQuery ? `No event types match "${searchQuery}".` : 'Please create an event type to get started.'}</p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {filtered.map((event) => (
+                <div key={event.id} className="bg-white border border-border shadow-sm rounded-xl">
+                  <EventTypeCard
+                    event={event}
+                    nextMeeting={nextMeetingByType[String(event.id)] || null}
+                    onCopyLink={() => handleCopyLink(event)}
+                    onEdit={() => navigate(`/event-types/${event.id}/edit`)}
+                    onDelete={() => setDeleteTarget(event)}
+                    onBookLink={() => setPreviewEvent(event)}
+                    onOfferTimes={() => setOfferTimesEvent(event)}
+                    onShare={() => setShareEvent(event)}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* List Container */}
-        {error ? (
-           <div className="bg-dangerLight/20 border border-danger/20 rounded-xl px-4 py-3 text-sm font-medium text-danger flex items-center justify-between">
-             <span>{error}</span>
-             <Button size="sm" variant="ghost" onClick={reload} className="hover:bg-danger/10 text-danger">Retry</Button>
-           </div>
-        ) : loading ? (
-           <div className="flex flex-col gap-3">
-              <div className="bg-white border border-border shadow-sm rounded-xl"><EventTypeCardSkeleton /></div>
-              <div className="bg-white border border-border shadow-sm rounded-xl"><EventTypeCardSkeleton /></div>
-           </div>
-        ) : filtered.length === 0 ? (
-           <div className="bg-white border border-border shadow-sm rounded-xl overflow-hidden flex flex-col p-16 text-center">
-             <h2 className="text-xl font-extrabold text-text-primary mb-2">{searchQuery ? 'No results found' : 'No event types'}</h2>
-             <p className="text-text-secondary text-sm font-medium">{searchQuery ? `No event types match "${searchQuery}".` : 'Please create an event type to get started.'}</p>
-           </div>
-        ) : (
-           <div className="flex flex-col gap-3">
-             {filtered.map((event) => (
-               <div key={event.id} className="bg-white border border-border shadow-sm rounded-xl">
-                 <EventTypeCard
-                   event={event}
-                   nextMeeting={nextMeetingByType[String(event.id)] || null}
-                   onCopyLink={() => handleCopyLink(event)}
-                   onEdit={() => navigate(`/event-types/${event.id}/edit`)}
-                   onDelete={() => setDeleteTarget(event)}
-                   onBookLink={() => setPreviewEvent(event)}
-                   onOfferTimes={() => setOfferTimesEvent(event)}
-                   onShare={() => setShareEvent(event)}
-                 />
-               </div>
-             ))}
-           </div>
-        )}
-      </div>
+        <Modal
+          open={!!deleteTarget}
+          onClose={() => setDeleteTarget(null)}
+          title="Delete Event Type?"
+          footer={
+            <>
+              <Button variant="ghost" size="md" onClick={() => setDeleteTarget(null)}>Cancel</Button>
+              <Button variant="danger" size="md" onClick={confirmDelete}>Delete Event Type</Button>
+            </>
+          }
+        >
+          <p className="text-base font-medium text-text-secondary">
+            This will permanently delete <strong className="text-text-primary">&quot;{deleteTarget?.name}&quot;</strong> and cancel all future bookings associated with it. This action cannot be undone.
+          </p>
+        </Modal>
 
-      <Modal
-         open={!!deleteTarget}
-         onClose={() => setDeleteTarget(null)}
-         title="Delete Event Type?"
-         footer={
-           <>
-             <Button variant="ghost" size="md" onClick={() => setDeleteTarget(null)}>Cancel</Button>
-             <Button variant="danger" size="md" onClick={confirmDelete}>Delete Event Type</Button>
-           </>
-         }
-       >
-         <p className="text-base font-medium text-text-secondary">
-           This will permanently delete <strong className="text-text-primary">&quot;{deleteTarget?.name}&quot;</strong> and cancel all future bookings associated with it. This action cannot be undone.
-         </p>
-       </Modal>
-
-       {/* Overlay Action Modals */}
-       <BookingPreviewModal 
-          open={!!previewEvent} 
-          onClose={() => setPreviewEvent(null)} 
-          event={previewEvent} 
-       />
-       <OfferTimesModal 
-          open={!!offerTimesEvent} 
-          onClose={() => setOfferTimesEvent(null)} 
-          event={offerTimesEvent} 
-       />
-       <ShareModal 
-          open={!!shareEvent} 
-          onClose={() => setShareEvent(null)} 
-          event={shareEvent} 
-       />
+        {/* Overlay Action Modals */}
+        <BookingPreviewModal
+          open={!!previewEvent}
+          onClose={() => setPreviewEvent(null)}
+          event={previewEvent}
+        />
+        <OfferTimesModal
+          open={!!offerTimesEvent}
+          onClose={() => setOfferTimesEvent(null)}
+          event={offerTimesEvent}
+        />
+        <ShareModal
+          open={!!shareEvent}
+          onClose={() => setShareEvent(null)}
+          event={shareEvent}
+        />
 
       </div>
     </div>
