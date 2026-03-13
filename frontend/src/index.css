@@ -4,7 +4,9 @@
 
 @layer base {
   body {
-    @apply bg-page text-text-primary antialiased;
+    @apply antialiased text-text-primary;
+    background: linear-gradient(145deg, #f8faff 0%, #f1f5f9 100%);
+    background-attachment: fixed;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 
@@ -15,7 +17,10 @@
 
 @layer utilities {
   .glass {
-    @apply bg-white/80 backdrop-blur-lg border-white/20;
+    @apply bg-white/70 backdrop-blur-xl border-white/40 shadow-sm transition-all duration-300;
+  }
+  .glass-card {
+    @apply bg-white border border-white/60 shadow-card hover:shadow-card-hover transition-all duration-smooth hover:-translate-y-1 rounded-2xl;
   }
   .animate-dropdown {
     animation: dropdown 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;

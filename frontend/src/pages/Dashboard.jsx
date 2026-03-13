@@ -99,7 +99,7 @@ function Dashboard() {
     <div className="flex-1 flex flex-col min-h-screen">
 
       {/* Top Bar matching new layout */}
-      <div className="h-16 border-b border-border flex items-center justify-end px-6 sticky top-0 bg-white z-40">
+      <div className="h-16 border-b border-white/20 flex items-center justify-end px-6 sticky top-0 glass z-40">
         <div className="flex items-center gap-4">
           <button className="text-text-secondary hover:text-text-primary transition-colors">
             <Users className="w-5 h-5" />
@@ -178,16 +178,16 @@ function Dashboard() {
         {/* Event List Section */}
         <div className="mb-8 mt-12">
           {/* User Header */}
-          <div className="flex items-center justify-between mb-4 px-1">
+          <div className="flex items-center justify-between mb-6 px-1">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center font-bold text-xs text-blue-600">
+              <div className="w-9 h-9 rounded-full bg-blue-50 flex items-center justify-center font-bold text-[14px] text-blue-600 shadow-sm ring-2 ring-white">
                 K
               </div>
-              <span className="font-extrabold text-[15px] tracking-tight text-text-primary">Kaushal Kumar</span>
+              <span className="font-extrabold text-[16px] tracking-tight text-text-primary">Kaushal Kumar</span>
             </div>
 
-            <button className="flex items-center gap-2 text-[14px] font-bold text-blue-600 hover:text-blue-800 transition-colors">
-              <ExternalLink className="w-4 h-4 stroke-[2]" /> View landing page
+            <button className="flex items-center gap-2 text-[14px] font-bold text-blue-600 hover:text-blue-700 transition-all duration-300 bg-white/60 backdrop-blur-sm px-4 py-2 rounded-xl shadow-sm border border-white/60 hover:-translate-y-0.5 hover:shadow-md">
+              <ExternalLink className="w-4 h-4 stroke-[2.5]" /> View landing page
             </button>
           </div>
 
@@ -214,9 +214,9 @@ function Dashboard() {
               <p className="text-text-secondary text-sm font-medium">{searchQuery ? `No event types match "${searchQuery}".` : 'Please create an event type to get started.'}</p>
             </div>
           ) : (
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-4">
               {filtered.map((event) => (
-                <div key={event.id} className="bg-white border border-border shadow-sm rounded-xl">
+                <div key={event.id} className="glass-card overflow-hidden">
                   <EventTypeCard
                     event={event}
                     nextMeeting={nextMeetingByType[String(event.id)] || null}

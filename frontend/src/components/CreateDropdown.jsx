@@ -47,7 +47,7 @@ function CreateDropdown({ open, onClose, anchorRef, side = 'right' }) {
       {/* Panel */}
       <div
         ref={panelRef}
-        className="fixed z-50 w-[380px] bg-white border border-border shadow-modal rounded-[8px] animate-dropdown text-left pb-1 overflow-hidden"
+        className="fixed z-50 w-[380px] bg-white/95 backdrop-blur-2xl border border-white/60 shadow-modal rounded-[12px] animate-dropdown text-left pb-1 overflow-hidden"
       >
         <div className="px-5 pt-5 pb-3">
           <h3 className="font-bold text-[#1A2E46] text-[15px] mb-3">Event type</h3>

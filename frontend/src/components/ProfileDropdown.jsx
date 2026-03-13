@@ -21,7 +21,7 @@ function ProfileDropdown({ open, onClose, anchorRef }) {
       <div className="fixed inset-0 z-40" onClick={onClose} />
       <div
         ref={panelRef}
-        className="fixed z-50 w-[300px] bg-white border border-border shadow-modal rounded-xl animate-dropdown text-left pb-1 overflow-hidden"
+        className="fixed z-50 w-[300px] bg-white/95 backdrop-blur-2xl border border-white/60 shadow-modal rounded-2xl animate-dropdown text-left pb-1 overflow-hidden"
       >
         <div className="px-5 pt-5 pb-4 border-b border-border">
           <h3 className="font-bold text-[#1A2E46] text-[16px] leading-tight mb-1">Kaushal Kumar</h3>

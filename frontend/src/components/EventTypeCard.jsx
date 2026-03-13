@@ -9,7 +9,7 @@ function EventTypeCard({ event, nextMeeting, onCopyLink, onEdit, onDelete, onBoo
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
-    <div className="relative group flex items-center p-4 pr-6 bg-white hover:bg-gray-50 transition-colors duration-fast">
+    <div className="relative group flex items-center p-5 pr-6 bg-transparent transition-all duration-300">
       {/* Colored Left Border */}
       <div
         className="absolute left-0 top-3 bottom-3 w-1.5 rounded-r-md"
