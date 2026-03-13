@@ -15,7 +15,7 @@ import {
 } from 'date-fns';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
-function Calendar({ currentMonth, selectedDate, onMonthChange, onDateSelect, availableDays }) {
+function Calendar({ currentMonth, selectedDate, onMonthChange, onDateSelect, availableDays, overrides = [] }) {
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(monthStart);
   const start = startOfWeek(monthStart, { weekStartsOn: 0 });
@@ -23,10 +23,20 @@ function Calendar({ currentMonth, selectedDate, onMonthChange, onDateSelect, ava
 
   const days = eachDayOfInterval({ start, end });
   const today = new Date();
+  const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
   const isDisabled = (day) => {
     if (!isSameMonth(day, monthStart)) return true;
-    if (isBefore(day, today.setHours(0, 0, 0, 0))) return true;
+    if (isBefore(day, startOfToday)) return true;
+
+    // Check strict overrides first
+    const dateStr = format(day, 'yyyy-MM-dd');
+    const dayOverride = overrides.find(o => o.override_date.startsWith(dateStr));
+    if (dayOverride) {
+      if (!dayOverride.is_available) return true;
+      return false;
+    }
+
     if (availableDays && !availableDays.includes(day.getDay())) return true;
     return false;
   };

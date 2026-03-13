@@ -10,6 +10,7 @@ import BookingPage from './pages/BookingPage';
 import Confirmation from './pages/Confirmation';
 import LandingPage from './pages/LandingPage';
 import CancelPage from './pages/CancelPage';
+import ReschedulePage from './pages/ReschedulePage';
 
 function App() {
   return (
@@ -59,6 +60,7 @@ function App() {
         <Route path="/book/:slug" element={<BookingPage />} />
         <Route path="/confirmation" element={<Confirmation />} />
         <Route path="/cancel/:token" element={<CancelPage />} />
+        <Route path="/reschedule/:token" element={<ReschedulePage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </ToastProvider>

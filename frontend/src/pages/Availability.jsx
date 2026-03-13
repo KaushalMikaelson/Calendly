@@ -5,6 +5,7 @@ import Toggle from '../components/ui/Toggle';
 import Button from '../components/ui/Button';
 import Skeleton from '../components/ui/Skeleton';
 import { useToast } from '../components/ui/Toast';
+import { CalendarDays, Plus, Trash2 } from 'lucide-react';
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -24,6 +25,8 @@ function Availability() {
   const { data, loading, error, reload, setData, setError } = useAvailability();
   const { showToast } = useToast();
   const [saving, setSaving] = useState(false);
+  
+  const [newOverride, setNewOverride] = useState(null);
 
   const rulesByDay = useMemo(() => {
     const byDay = new Map();
@@ -93,6 +96,36 @@ function Availability() {
       showToast({ message: e.message, type: 'error' });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleAddOverride = async () => {
+    if (!newOverride?.override_date) {
+      showToast({ message: 'Please select a date', type: 'error' });
+      return;
+    }
+    try {
+      await availabilityApi.addOverride({
+        override_date: newOverride.override_date,
+        is_available: newOverride.is_available,
+        start_time: newOverride.is_available ? newOverride.start_time : null,
+        end_time: newOverride.is_available ? newOverride.end_time : null,
+      });
+      showToast({ message: 'Date override added', type: 'success' });
+      setNewOverride(null);
+      reload();
+    } catch (e) {
+      showToast({ message: e.message, type: 'error' });
+    }
+  };
+
+  const handleDeleteOverride = async (id) => {
+    try {
+      await availabilityApi.deleteOverride(id);
+      showToast({ message: 'Override removed', type: 'success' });
+      reload();
+    } catch (e) {
+      showToast({ message: e.message, type: 'error' });
     }
   };
 
@@ -201,6 +234,97 @@ function Availability() {
                 </div>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {/* Date Overrides Section */}
+      {!loading && !error && (
+        <div className="bg-white border border-border rounded-[24px] shadow-sm flex flex-col mt-8">
+          <div className="px-8 py-6 border-b border-border bg-gray-50/50 flex items-center justify-between">
+            <div className="font-semibold text-text-primary text-base">Date Overrides</div>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setNewOverride({ override_date: '', is_available: false, start_time: '09:00', end_time: '17:00' })}
+              className="flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" /> Add Date
+            </Button>
+          </div>
+          
+          <div className="divide-y divide-border/60">
+            {newOverride && (
+              <div className="px-8 flex items-center gap-4 py-5 bg-blue-50/30">
+                <input
+                  type="date"
+                  className="h-10 px-3 text-sm rounded-lg border border-border"
+                  value={newOverride.override_date}
+                  onChange={(e) => setNewOverride({ ...newOverride, override_date: e.target.value })}
+                />
+                <select
+                  className="h-10 px-3 text-sm rounded-lg border border-border"
+                  value={newOverride.is_available ? 'available' : 'unavailable'}
+                  onChange={(e) => setNewOverride({ ...newOverride, is_available: e.target.value === 'available' })}
+                >
+                  <option value="unavailable">Unavailable</option>
+                  <option value="available">Available</option>
+                </select>
+                
+                {newOverride.is_available && (
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={newOverride.start_time}
+                      onChange={(e) => setNewOverride({ ...newOverride, start_time: e.target.value })}
+                      className="h-10 px-3 text-sm rounded-lg border border-border"
+                    >
+                      {TIME_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                    <span>-</span>
+                    <select
+                      value={newOverride.end_time}
+                      onChange={(e) => setNewOverride({ ...newOverride, end_time: e.target.value })}
+                      className="h-10 px-3 text-sm rounded-lg border border-border"
+                    >
+                      {TIME_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                  </div>
+                )}
+                
+                <div className="ml-auto flex items-center gap-2">
+                  <Button size="sm" onClick={handleAddOverride}>Save</Button>
+                  <Button size="sm" variant="ghost" onClick={() => setNewOverride(null)}>Cancel</Button>
+                </div>
+              </div>
+            )}
+            
+            {data.overrides?.length === 0 && !newOverride && (
+              <div className="p-8 text-center text-sm text-text-muted">No date overrides added yet.</div>
+            )}
+            
+            {(data.overrides || []).map((o) => (
+              <div key={o.id} className="px-8 py-5 flex items-center justify-between">
+                <div className="flex items-center gap-6">
+                  <div className="font-semibold text-text-primary">
+                    {new Date(o.override_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                  </div>
+                  <div>
+                    {o.is_available ? (
+                      <span className="text-text-secondary text-sm">Available from {o.start_time?.slice(0, 5)} to {o.end_time?.slice(0, 5)}</span>
+                    ) : (
+                      <span className="text-sm font-medium text-text-muted">Unavailable</span>
+                    )}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleDeleteOverride(o.id)}
+                  className="p-2 text-danger hover:bg-dangerLight/20 rounded-lg transition-colors"
+                >
+                  <Trash2 className="w-5 h-5" />
+                </button>
+              </div>
+            ))}
           </div>
         </div>
       )}

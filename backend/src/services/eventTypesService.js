@@ -9,6 +9,17 @@ function generateSlug(name) {
     .replace(/(^-|-$)/g, '');
 }
 
+async function findUniqueSlug(baseSlug) {
+  let slug = baseSlug;
+  let counter = 2;
+  while (true) {
+    const existing = await query('SELECT id FROM event_types WHERE slug = $1 LIMIT 1;', [slug]);
+    if (existing.rows.length === 0) return slug;
+    slug = `${baseSlug}-${counter}`;
+    counter++;
+  }
+}
+
 async function listEventTypes() {
   const res = await query(
     `
@@ -33,7 +44,19 @@ async function createEventType(payload) {
     throw err;
   }
 
-  const slug = payload.slug ? generateSlug(payload.slug) : generateSlug(name);
+  // Prevent creating duplicate event types with the exact same name
+  const existingNameCheck = await query(
+    'SELECT id FROM event_types WHERE user_id = $1 AND name = $2 LIMIT 1;',
+    [DEFAULT_USER_ID, name]
+  );
+  if (existingNameCheck.rows.length > 0) {
+    const err = new Error('An event type with this name already exists');
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const baseSlug = payload.slug ? generateSlug(payload.slug) : generateSlug(name);
+  const slug = await findUniqueSlug(baseSlug);
 
   const res = await query(
     `
@@ -85,6 +108,19 @@ async function updateEventType(id, payload) {
   if (!existing) return null;
 
   const name = payload.name ?? existing.name;
+
+  if (name !== existing.name) {
+    const existingNameCheck = await query(
+      'SELECT id FROM event_types WHERE user_id = $1 AND name = $2 AND id != $3 LIMIT 1;',
+      [existing.user_id, name, id]
+    );
+    if (existingNameCheck.rows.length > 0) {
+      const err = new Error('An event type with this name already exists');
+      err.statusCode = 400;
+      throw err;
+    }
+  }
+
   const slug =
     payload.slug !== undefined && payload.slug !== ''
       ? generateSlug(payload.slug)
@@ -130,12 +166,7 @@ async function updateEventType(id, payload) {
 
 async function deleteEventType(id) {
   const res = await query(
-    `
-    UPDATE event_types
-    SET is_active = false, updated_at = NOW()
-    WHERE id = $1
-    RETURNING *;
-  `,
+    'DELETE FROM event_types WHERE id = $1 RETURNING *;',
     [id]
   );
   return res.rows[0] || null;

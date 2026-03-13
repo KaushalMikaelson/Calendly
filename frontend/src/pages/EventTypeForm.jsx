@@ -230,7 +230,13 @@ function EventTypeForm() {
         err.message?.toLowerCase().includes('unique constraint') ||
         err.message?.toLowerCase().includes('duplicate key');
 
-      if (isDuplicateSlug) {
+      if (err.message === 'An event type with this name already exists') {
+        setErrors((prev) => ({
+          ...prev,
+          name: 'This name is already used. Please choose another.',
+        }));
+        showToast({ message: 'An event type with this name already exists.', type: 'error' });
+      } else if (isDuplicateSlug) {
         setErrors((prev) => ({
           ...prev,
           slug: 'This URL is already taken — please choose a different one.',
@@ -239,7 +245,7 @@ function EventTypeForm() {
         setActiveSection('host');
         showToast({ message: 'URL slug is already in use. Please choose a unique one.', type: 'error' });
       } else {
-        showToast({ message: err.message, type: 'error' });
+        showToast({ message: err.message || 'Something went wrong', type: 'error' });
       }
     } finally {
       setLoading(false);
@@ -259,202 +265,11 @@ function EventTypeForm() {
   };
 
   return (
-    <div className="h-[calc(100vh-80px)] bg-page page-enter flex overflow-hidden">
-      
-      {/* Left Area: Live Booking Preview */}
-      <div className="flex-1 bg-[#F9FAFB] hidden lg:flex flex-col relative border-r border-border">
-        {/* Header Ribbon */}
-        <div className="h-16 flex items-center justify-between px-8 bg-white border-b border-border shadow-sm z-10">
-           <div className="flex items-center gap-2.5">
-             <div className="w-3.5 h-3.5 rounded-full" style={{ backgroundColor: form.color }} />
-             <h2 className="text-[15px] font-bold text-text-primary">Preview of {form.name || 'New Meeting'}</h2>
-           </div>
-           <div className="flex items-center gap-4 text-text-muted">
-              <CalendarDays className="w-5 h-5 cursor-pointer hover:text-text-primary transition-colors" />
-              <div className="w-px h-5 bg-border" />
-              <button 
-                type="button" 
-                onClick={() => window.open(bookingLink, '_blank')}
-                className="flex items-center gap-2 px-4 py-1.5 rounded-full border border-border text-sm font-semibold text-text-primary hover:bg-gray-50 transition-colors"
-              >
-                <div className="w-3.5 h-3.5 border-2 border-current rounded-sm border-t-0 border-r-0 transform -rotate-45" />
-                Copy link
-              </button>
-           </div>
-        </div>
+    <div className="h-[calc(100vh-80px)] bg-page page-enter flex items-start justify-center overflow-hidden">
 
-        {/* Live Preview Canvas */}
-        <div className="flex-1 overflow-y-auto p-12 flex justify-center pb-32">
-          {/* Card Wrapper mimicking actual booking page */}
-          <div className="w-full max-w-[800px] bg-white rounded-xl shadow-lg border border-border overflow-hidden self-start flex flex-col md:flex-row min-h-[500px]">
-             
-             {/* Left Column: Details + selected date/time */}
-             <div className="w-full md:w-[40%] p-8 border-b md:border-b-0 md:border-r border-border bg-white flex flex-col">
-               <h3 className="text-base font-bold text-text-secondary mb-1">Kaushal Kumar</h3>
-               <h1 className="text-3xl font-extrabold text-text-primary mb-6 tracking-tight">{form.name || 'Event Name'}</h1>
-               
-               <div className="flex flex-col gap-4 text-[15px] font-semibold text-text-secondary">
-                 <div className="flex items-center gap-3">
-                   <Clock className="w-6 h-6 text-text-muted" strokeWidth={1.5} />
-                   {form.duration} min
-                 </div>
-                 {form.location && (
-                   <div className="flex items-start gap-3">
-                     {form.location.startsWith('http') || form.location.includes('Zoom') ? (
-                       <Video className="w-6 h-6 text-text-muted shrink-0 mt-0.5" strokeWidth={1.5} />
-                     ) : form.location.includes('Phone') ? (
-                       <Phone className="w-6 h-6 text-text-muted shrink-0 mt-0.5" strokeWidth={1.5} />
-                     ) : (
-                       <MapPin className="w-6 h-6 text-text-muted shrink-0 mt-0.5" strokeWidth={1.5} />
-                     )}
-                     <span className="leading-snug">{form.location.startsWith('http') ? 'Web conferencing details provided upon confirmation.' : form.location}</span>
-                   </div>
-                 )}
 
-                 {/* Selected date & time pill */}
-                 {selectedDate && (
-                   <div className="flex items-start gap-3 mt-1">
-                     <CalendarDays className="w-6 h-6 text-text-muted shrink-0 mt-0.5" strokeWidth={1.5} />
-                     <div className="flex flex-col gap-0.5">
-                       <span className="text-text-primary">
-                         {selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
-                       </span>
-                       {selectedTime && (
-                         <span className="text-blue-primary font-bold">{selectedTime}</span>
-                       )}
-                     </div>
-                   </div>
-                 )}
-               </div>
-               
-               {form.description && (
-                  <p className="mt-6 pt-6 border-t border-border text-[15px] leading-relaxed text-text-primary flex-1 whitespace-pre-wrap">
-                    {form.description}
-                  </p>
-               )}
-             </div>
-             
-             {/* Right Column: Interactive Calendar + Time Slots */}
-             <div className="flex-1 flex overflow-hidden">
-
-               {/* Calendar panel */}
-               <div className={`flex flex-col p-6 transition-all duration-300 ${
-                 selectedDate ? 'w-[55%]' : 'w-full'
-               }`}>
-                 <h2 className="text-[18px] font-bold text-text-primary mb-5 text-center">Select a Date &amp; Time</h2>
-
-                 {/* Month navigation */}
-                 <div className="flex items-center justify-between mb-4 px-1">
-                   <button
-                     type="button"
-                     onClick={() => setPreviewMonth(m => new Date(m.getFullYear(), m.getMonth() - 1, 1))}
-                     className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-text-muted hover:text-text-primary transition-colors"
-                   >
-                     <ChevronDown className="w-4 h-4 rotate-90" />
-                   </button>
-                   <span className="text-[15px] font-semibold text-text-primary">{monthLabel}</span>
-                   <button
-                     type="button"
-                     onClick={() => setPreviewMonth(m => new Date(m.getFullYear(), m.getMonth() + 1, 1))}
-                     className="w-8 h-8 flex items-center justify-center rounded-full bg-blue-50 text-blue-primary hover:bg-blue-100 transition-colors"
-                   >
-                     <ChevronDown className="w-4 h-4 -rotate-90" />
-                   </button>
-                 </div>
-
-                 {/* Day headers */}
-                 <div className="grid grid-cols-7 mb-2">
-                   {['SUN','MON','TUE','WED','THU','FRI','SAT'].map(d => (
-                     <div key={d} className="text-center text-[10px] font-bold text-text-muted tracking-widest py-1">{d}</div>
-                   ))}
-                 </div>
-
-                 {/* Date grid */}
-                 <div className="grid grid-cols-7 gap-y-1">
-                   {calendarDays.map((date, idx) => {
-                     if (!date) return <div key={`blank-${idx}`} />;
-                     const selectable = isDateSelectable(date);
-                     const isSelected = isSameDay(date, selectedDate);
-                     const isToday = isSameDay(date, today);
-                     return (
-                       <div key={date.toISOString()} className="flex justify-center">
-                         <button
-                           type="button"
-                           disabled={!selectable}
-                            onClick={() => {
-                             if (selectable) {
-                               setSelectedDate(date);
-                               setSelectedTime(null); // clear time when date changes
-                             }
-                           }}
-                           className={`w-9 h-9 flex items-center justify-center rounded-full text-[13px] font-semibold transition-all
-                             ${ isSelected
-                               ? 'bg-blue-primary text-white shadow-sm'
-                               : isToday
-                               ? 'border-2 border-blue-primary text-blue-primary'
-                               : selectable
-                               ? 'text-text-primary hover:bg-blue-50 hover:text-blue-primary cursor-pointer'
-                               : 'text-gray-300 cursor-not-allowed'
-                             }`}
-                         >
-                           {date.getDate()}
-                         </button>
-                       </div>
-                     );
-                   })}
-                 </div>
-
-                 <div className="text-[11px] font-medium text-text-muted text-center mt-4">
-                   {Intl.DateTimeFormat().resolvedOptions().timeZone.replace(/_/g,' ')}
-                 </div>
-               </div>
-
-               {/* Time slots panel — slides in when a date is selected */}
-               {selectedDate && (
-                 <div className="w-[45%] border-l border-border flex flex-col overflow-hidden">
-                   <div className="px-3 pt-5 pb-2 shrink-0">
-                     <div className="text-[13px] font-bold text-text-primary">
-                       {selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-                     </div>
-                   </div>
-                   <div className="flex-1 overflow-y-auto px-3 pb-4 space-y-2">
-                     {timeSlots.map(slot => {
-                       const isSelectedSlot = selectedTime === slot;
-                       return isSelectedSlot ? (
-                         /* When a slot is selected, split into time + Confirm button */
-                         <div key={slot} className="flex gap-1.5">
-                           <div className="flex-1 text-center py-2.5 rounded-xl bg-blue-primary text-white text-[13px] font-bold border border-blue-primary">
-                             {slot}
-                           </div>
-                           <button
-                             type="button"
-                             onClick={() => setSelectedTime(null)}
-                             className="flex-1 text-center py-2.5 rounded-xl bg-blue-primary text-white text-[13px] font-bold border border-blue-primary hover:bg-blue-700 transition-colors"
-                           >
-                             Confirm
-                           </button>
-                         </div>
-                       ) : (
-                         <button
-                           key={slot}
-                           type="button"
-                           onClick={() => setSelectedTime(slot)}
-                           className="w-full text-center py-2.5 rounded-xl border border-blue-200 text-blue-primary text-[13px] font-semibold hover:bg-blue-primary hover:text-white hover:border-blue-primary transition-all"
-                         >
-                           {slot}
-                         </button>
-                       );
-                     })}
-                   </div>
-                 </div>
-               )}
-             </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Right Area: Form Configuration Sidebar */}
-      <div className="w-full lg:w-[480px] xl:w-[540px] bg-white h-full flex flex-col relative shrink-0 shadow-[-10px_0_30px_rgba(0,0,0,0.03)] z-20">
+      {/* Form Configuration Panel */}
+      <div className="w-full max-w-[600px] bg-white h-full flex flex-col relative shadow-modal z-20">
         
         {/* Header Options */}
         <div className="px-8 py-6 relative">
@@ -476,6 +291,7 @@ function EventTypeForm() {
                onChange={(e) => handleChange('name', e.target.value)}
                className="!space-y-0 text-xl font-bold tracking-tight text-text-primary !h-10 w-full"
                placeholder="Event Name"
+               error={errors.name}
             />
           </div>
         </div>
@@ -696,7 +512,7 @@ function EventTypeForm() {
         
         {/* Bottom Actions Line fixed within component */}
         <div className="border-t border-border bg-white flex items-center justify-between p-5 mt-auto z-20">
-           <button type="button" className="text-[14px] font-bold text-text-secondary hover:text-text-primary transition-colors flex items-center gap-2">
+           <button type="button" onClick={() => window.open(bookingLink, '_blank')} className="text-[14px] font-bold text-text-secondary hover:text-text-primary transition-colors flex items-center gap-2">
               <Users className="w-4 h-4" /> Preview
            </button>
            <div className="flex items-center gap-4">

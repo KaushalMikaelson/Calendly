@@ -37,17 +37,25 @@ async function sendEmail(to, subject, html) {
   });
 }
 
-async function ensureNoOverlap(eventTypeId, startTime, endTime) {
+async function ensureNoOverlap(eventType, startTime, endTime) {
+  const { parse, addMinutes } = require('date-fns');
+  const bufferedStartStr = addMinutes(new Date(startTime), -1 * (eventType.buffer_before || 0)).toISOString();
+  const bufferedEndStr = addMinutes(new Date(endTime), (eventType.buffer_after || 0)).toISOString();
+
   const res = await query(
     `
-    SELECT id
-    FROM bookings
-    WHERE event_type_id = $1
-      AND status = 'confirmed'
-      AND (start_time, end_time) OVERLAPS ($2::timestamptz, $3::timestamptz)
+    SELECT b.id
+    FROM bookings b
+    JOIN event_types et ON b.event_type_id = et.id
+    WHERE et.user_id = $1
+      AND b.status = 'confirmed'
+      AND (
+        (b.start_time - (COALESCE(et.buffer_before, 0) || ' minutes')::INTERVAL),
+        (b.end_time + (COALESCE(et.buffer_after, 0) || ' minutes')::INTERVAL)
+      ) OVERLAPS ($2::timestamptz, $3::timestamptz)
     LIMIT 1;
   `,
-    [eventTypeId, startTime, endTime]
+    [eventType.user_id, bufferedStartStr, bufferedEndStr]
   );
   if (res.rows.length > 0) {
     throw createError('This time slot is already booked. Please choose another time.', 409);
@@ -73,7 +81,7 @@ async function createBooking(payload) {
     throw createError('Invalid start or end time', 400);
   }
 
-  await ensureNoOverlap(event_type_id, start.toISOString(), end.toISOString());
+  await ensureNoOverlap(eventType, start.toISOString(), end.toISOString());
 
   const res = await query(
     `
@@ -161,7 +169,8 @@ async function rescheduleByToken(token, payload) {
   const start = new Date(start_time);
   const end = new Date(end_time);
 
-  await ensureNoOverlap(existing.event_type_id, start.toISOString(), end.toISOString());
+  const eventType = await getEventTypeById(existing.event_type_id);
+  await ensureNoOverlap(eventType, start.toISOString(), end.toISOString());
 
   const res = await query(
     `
@@ -173,8 +182,6 @@ async function rescheduleByToken(token, payload) {
   `,
     [existing.id]
   );
-
-  const eventType = await getEventTypeById(existing.event_type_id);
 
   const subject = `Rescheduled: ${eventType.name}`;
   const html = `

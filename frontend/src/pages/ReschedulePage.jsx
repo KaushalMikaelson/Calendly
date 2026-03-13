@@ -5,15 +5,15 @@ import { format } from 'date-fns';
 import Calendar from '../components/Calendar';
 import TimeSlotPicker from '../components/TimeSlotPicker';
 import Button from '../components/ui/Button';
-import Input from '../components/ui/Input';
 import { eventTypesApi, availabilityApi, bookingsApi } from '../api';
 import { useToast } from '../components/ui/Toast';
 
-function BookingPage() {
-  const { slug } = useParams();
+function ReschedulePage() {
+  const { token } = useParams();
   const navigate = useNavigate();
   const { showToast } = useToast();
 
+  const [booking, setBooking] = useState(null);
   const [step, setStep] = useState(1);
 
   const [eventType, setEventType] = useState(null);
@@ -57,8 +57,17 @@ function BookingPage() {
     (async () => {
       try {
         setLoadingEvent(true);
-        const res = await eventTypesApi.getBySlug(slug);
-        const et = res.data || res;
+        const resBooking = await bookingsApi.getByRescheduleToken(token);
+        const bookingData = resBooking.data || resBooking;
+        setBooking(bookingData);
+        setForm({
+          name: bookingData.invitee_name,
+          email: bookingData.invitee_email,
+          notes: bookingData.invitee_notes || '',
+        });
+        
+        const resEvent = await eventTypesApi.getById(bookingData.event_type_id);
+        const et = resEvent.data || resEvent;
         setEventType(et);
       } catch (e) {
         setError(e.message);
@@ -66,7 +75,7 @@ function BookingPage() {
         setLoadingEvent(false);
       }
     })();
-  }, [slug]);
+  }, [token]);
 
   useEffect(() => {
     if (!eventType) return;
@@ -103,22 +112,16 @@ function BookingPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!eventType || !selectedSlot) {
-      showToast({ message: 'Please select a time slot first', type: 'error' });
+      showToast({ message: 'Please select a new time slot first', type: 'error' });
       return;
     }
-    if (!validateForm()) return;
     try {
       setSubmitting(true);
-      const booking = await bookingsApi.create({
-        event_type_id: eventType.id,
-        invitee_name: form.name,
-        invitee_email: form.email,
-        invitee_notes: form.notes,
+      const rescheduled = await bookingsApi.rescheduleByToken(token, {
         start_time: selectedSlot.startISO,
         end_time: selectedSlot.endISO,
-        timezone: 'Asia/Kolkata',
       });
-      const b = booking.data || booking;
+      const b = rescheduled.data || rescheduled;
       navigate('/confirmation', {
         state: {
           booking: {
@@ -300,34 +303,14 @@ function BookingPage() {
           {step === 2 && (
             <form onSubmit={handleSubmit} className="p-6 lg:p-10 flex flex-col h-full overflow-y-auto custom-scrollbar animate-[slideInRight_0.35s_ease-out]">
               <h2 className="text-xl lg:text-2xl font-bold text-text-primary tracking-tight mb-6">
-                Enter Details
+                Confirm Reschedule
               </h2>
 
               <div className="space-y-5 max-w-[480px]">
-                <Input
-                  label="Name *"
-                  value={form.name}
-                  onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
-                  error={formErrors.name}
-                />
-                <Input
-                  label="Email *"
-                  type="email"
-                  value={form.email}
-                  onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))}
-                  error={formErrors.email}
-                />
-                
-                <div className="space-y-1.5">
-                  <label className="block text-sm font-semibold text-text-primary">
-                    Please share anything that will help prepare for our meeting.
-                  </label>
-                  <textarea
-                    rows={4}
-                    className="w-full px-4 py-3 text-sm rounded-xl border border-border bg-white placeholder:text-text-muted hover:border-gray-400 focus:outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-primary transition-all duration-200 resize-none"
-                    value={form.notes}
-                    onChange={(e) => setForm((prev) => ({ ...prev, notes: e.target.value }))}
-                  />
+                <div className="text-sm font-medium text-text-secondary p-4 bg-gray-50 border border-border rounded-xl">
+                  <p className="mb-1"><strong>Name:</strong> {booking?.invitee_name}</p>
+                  <p className="mb-1"><strong>Email:</strong> {booking?.invitee_email}</p>
+                  {booking?.invitee_notes && <p><strong>Notes:</strong> {booking.invitee_notes}</p>}
                 </div>
 
                 <div className="pt-4">
@@ -335,9 +318,10 @@ function BookingPage() {
                     type="submit"
                     size="lg"
                     loading={submitting}
+                    disabled={!selectedSlot}
                     className="font-bold text-base px-8 py-3.5"
                   >
-                    Schedule Event
+                    Confirm Reschedule
                   </Button>
                 </div>
               </div>
@@ -361,4 +345,4 @@ function BookingPage() {
   );
 }
 
-export default BookingPage;
+export default ReschedulePage;

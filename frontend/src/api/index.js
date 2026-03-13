@@ -35,6 +35,8 @@ export const bookingsApi = {
   create: (data) => api.post('/bookings', data),
   getByToken: (token) => api.get(`/bookings/cancel/${token}`),
   cancelByToken: (token) => api.put(`/bookings/cancel/${token}`),
+  getByRescheduleToken: (token) => api.get(`/bookings/reschedule/${token}`),
+  rescheduleByToken: (token, data) => api.put(`/bookings/reschedule/${token}`, data),
 };
 
 export const meetingsApi = {

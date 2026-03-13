@@ -14,6 +14,7 @@ import ShareModal from '../components/ShareModal';
 import { eventTypesApi, meetingsApi } from '../api';
 import { useToast } from '../components/ui/Toast';
 import CreateDropdown from '../components/CreateDropdown';
+import ProfileDropdown from '../components/ProfileDropdown';
 
 function Dashboard() {
   const navigate = useNavigate();
@@ -24,6 +25,9 @@ function Dashboard() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const createBtnRef = useRef(null);
   const [searchQuery, setSearchQuery] = useState('');
+  
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const profileBtnRef = useRef(null);
   
   // Modal states
   const [previewEvent, setPreviewEvent] = useState(null);
@@ -100,12 +104,28 @@ function Dashboard() {
            <button className="text-text-secondary hover:text-text-primary transition-colors">
               <Users className="w-5 h-5" />
            </button>
-           <button className="flex items-center gap-2 hover:bg-gray-50 p-1 pl-2 pr-1 rounded-full transition-colors">
-              <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 font-bold text-xs flex items-center justify-center">
-                K
-              </div>
-              <ChevronDown className="w-4 h-4 text-text-muted" />
-           </button>
+           
+           <div className="relative z-50">
+             <button 
+               ref={profileBtnRef}
+               onClick={() => setProfileDropdownOpen((prev) => !prev)}
+               className={`flex items-center gap-2 p-1 pl-1.5 pr-1 rounded-full transition-colors ${profileDropdownOpen ? 'bg-white' : 'hover:bg-gray-50'}`}
+             >
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs transition-all ${
+                  profileDropdownOpen 
+                    ? 'bg-[#E5F0FF] text-[#0069FF] ring-[1.5px] ring-[#0069FF] ring-offset-[3px] ring-offset-white' 
+                    : 'bg-blue-50 text-blue-600'
+                }`}>
+                  K
+                </div>
+                <ChevronDown className={`w-4 h-4 transition-transform ${profileDropdownOpen ? 'rotate-180 text-text-primary' : 'text-text-muted'}`} />
+             </button>
+             <ProfileDropdown
+                open={profileDropdownOpen}
+                onClose={() => setProfileDropdownOpen(false)}
+                anchorRef={profileBtnRef}
+             />
+           </div>
          </div>
       </div>
 

@@ -66,16 +66,28 @@ function MeetingCard({ meeting, onCancel }) {
           )}
         </div>
       </div>
-      <div className="sm:self-stretch flex items-center pt-3 sm:pt-0 border-t border-border sm:border-0">
+      <div className="sm:self-stretch flex items-center gap-2 pt-3 sm:pt-0 border-t border-border sm:border-0">
         {meeting.status === 'confirmed' && isUpcoming ? (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onCancel}
-            className="w-full sm:w-auto text-danger hover:bg-dangerLight/50"
-          >
-            Cancel
-          </Button>
+          <>
+            {meeting.reschedule_token && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.location.href = `/reschedule/${meeting.reschedule_token}`}
+                className="w-full sm:w-auto text-blue-primary border-blue-primary/30 hover:bg-blue-50"
+              >
+                Reschedule
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onCancel}
+              className="w-full sm:w-auto text-danger hover:bg-dangerLight/50"
+            >
+              Cancel
+            </Button>
+          </>
         ) : meeting.status === 'cancelled' ? (
            <span className="px-4 py-1.5 text-xs font-bold uppercase tracking-wider bg-gray-100 text-text-muted rounded-full">
              Cancelled

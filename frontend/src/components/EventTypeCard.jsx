@@ -5,29 +5,8 @@ export function EventTypeCardSkeleton() {
   return <div className="h-[100px] w-full border-b border-border bg-gray-50 animate-pulse" />;
 }
 
-function formatMeetingDateTime(isoString) {
-  const date = new Date(isoString);
-  const dateStr = date.toLocaleDateString('en-US', {
-    weekday: 'short', month: 'short', day: 'numeric', year: 'numeric',
-  });
-  const timeStr = date.toLocaleTimeString('en-US', {
-    hour: 'numeric', minute: '2-digit',
-  });
-  return `${dateStr} at ${timeStr}`;
-}
-
 function EventTypeCard({ event, nextMeeting, onCopyLink, onEdit, onDelete, onBookLink, onOfferTimes, onShare }) {
   const [menuOpen, setMenuOpen] = useState(false);
-
-  let meetingLabel = null;
-  if (event.scheduled_date) {
-    const d = new Date(event.scheduled_date);
-    const dateStr = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
-    const timeStr = event.scheduled_time || 'No time set';
-    meetingLabel = `${dateStr} at ${timeStr}`;
-  } else if (nextMeeting) {
-    meetingLabel = formatMeetingDateTime(nextMeeting.start_time);
-  }
 
   return (
     <div className="relative group flex items-center p-4 pr-6 bg-white hover:bg-gray-50 transition-colors duration-fast">
@@ -43,21 +22,19 @@ function EventTypeCard({ event, nextMeeting, onCopyLink, onEdit, onDelete, onBoo
         
         <div className="flex flex-col text-left">
            <h3 className="font-bold text-[17px] text-text-primary tracking-tight">{event.name}</h3>
-           <div className="text-[13px] font-medium text-text-secondary mt-1 max-w-[500px] truncate">
-             {event.duration} min • {event.location || 'No location'} • One-on-One
+           <div className="flex items-center gap-1.5 text-[14px] font-medium text-[#4A6380] mt-0.5 max-w-[500px] truncate">
+             {!event.location && (
+               <svg className="w-[18px] h-[18px] text-[#F39C12] shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15h2v2h-2v-2zm0-10h2v8h-2V7z"/>
+               </svg>
+             )}
+             <span>
+               {event.duration} min • {event.location || 'No location set'} • One-on-One
+             </span>
            </div>
-           {meetingLabel ? (
-             <div className="flex items-center gap-1.5 mt-0.5">
-               <CalendarDays className="w-3.5 h-3.5 text-blue-primary shrink-0" strokeWidth={2} />
-               <span className="text-[12px] font-semibold text-blue-primary">
-                 {meetingLabel}
-               </span>
-             </div>
-           ) : (
-             <div className="text-[12px] font-medium text-text-muted mt-0.5">
-               Not scheduled
-             </div>
-           )}
+           <div className="text-[14px] font-medium text-[#4A6380] mt-0.5">
+             Weekdays, 9 am - 5 pm
+           </div>
         </div>
       </div>
       

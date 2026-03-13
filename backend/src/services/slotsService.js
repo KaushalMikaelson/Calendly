@@ -77,18 +77,19 @@ async function getAvailableSlots(dateStr, eventTypeId) {
 
   const bookingsRes = await query(
     `
-    SELECT start_time, end_time
-    FROM bookings
-    WHERE event_type_id = $1
-      AND status = 'confirmed'
-      AND DATE(start_time AT TIME ZONE $3) = $2;
+    SELECT b.start_time, b.end_time, et.buffer_before, et.buffer_after
+    FROM bookings b
+    JOIN event_types et ON b.event_type_id = et.id
+    WHERE et.user_id = $1
+      AND b.status = 'confirmed'
+      AND DATE(b.start_time AT TIME ZONE $3) = $2;
   `,
-    [eventTypeId, dateStr, schedule.timezone]
+    [eventType.user_id, dateStr, schedule.timezone]
   );
 
   const existingBookings = bookingsRes.rows.map((b) => ({
-    start: new Date(b.start_time),
-    end: new Date(b.end_time),
+    start: addMinutes(new Date(b.start_time), -1 * (b.buffer_before || 0)),
+    end: addMinutes(new Date(b.end_time), (b.buffer_after || 0)),
   }));
 
   const now = new Date();
@@ -109,7 +110,10 @@ async function getAvailableSlots(dateStr, eventTypeId) {
       continue;
     }
 
-    const overlaps = existingBookings.some((b) => slotStart < b.end && slotEnd > b.start);
+    const slotStartPadded = addMinutes(slotStart, -1 * (eventType.buffer_before || 0));
+    const slotEndPadded = addMinutes(slotEnd, (eventType.buffer_after || 0));
+
+    const overlaps = existingBookings.some((b) => slotStartPadded < b.end && slotEndPadded > b.start);
     if (!overlaps) {
       slots.push({
         start: format(slotStart, 'h:mm a'),

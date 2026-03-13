@@ -1,6 +1,6 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { CheckCircle2, CalendarDays, Clock, Timer, MapPin, Mail } from 'lucide-react';
+import { CheckCircle2, CalendarDays, Clock, Timer, MapPin, Mail, User } from 'lucide-react';
 import Button from '../components/ui/Button';
 
 function formatGCalDate(isoString) {
@@ -116,6 +116,42 @@ function Confirmation() {
               <div>{booking.location}</div>
             </div>
           </div>
+
+          {booking.duration && (
+            <div className="flex items-center gap-4 text-base text-text-primary font-medium">
+               <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 shrink-0">
+                 <Timer className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="text-text-secondary text-sm">Duration</div>
+                <div>{booking.duration} minutes</div>
+              </div>
+            </div>
+          )}
+
+          {booking.invitee_name && (
+            <div className="flex items-center gap-4 text-base text-text-primary font-medium">
+               <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 shrink-0">
+                 <User className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="text-text-secondary text-sm">Invitee</div>
+                <div>{booking.invitee_name}</div>
+              </div>
+            </div>
+          )}
+
+          {booking.invitee_email && (
+            <div className="flex items-center gap-4 text-base text-text-primary font-medium">
+               <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 shrink-0">
+                 <Mail className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="text-text-secondary text-sm">Email</div>
+                <div>{booking.invitee_email}</div>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
